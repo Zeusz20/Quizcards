@@ -1,6 +1,13 @@
 {% extends "main/base.html" %}
 
 {% block content %}
-    <h3>Welcome {{ username }}!</h3>
-    <a href="/">Log out</a>
+    {% include "main/header.html" %}
+    <div class="col-11">
+        {% if request.GET.view == "manage" %}
+            {% include "main/user_manage.html" %}
+        {% else %}
+            <h3>Welcome {{ username }}!</h3>
+            {% include "main/user_main.html" %}
+        {% endif %}
+    </div>
 {% endblock content %}

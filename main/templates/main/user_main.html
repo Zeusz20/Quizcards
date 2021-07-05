@@ -1,0 +1,9 @@
+<p>Your decks:</p> <br>
+{% for deck in decks %}
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ deck.name }}</h5>
+            <p class="card-text">Created on: {{ deck.date_created }}</p>
+        </div>
+    </div>
+{% endfor %}

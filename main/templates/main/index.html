@@ -1,19 +1,21 @@
 {% extends "main/base.html" %}
 
 {% block content %}
-    <h3>Quizcards</h3>
-    <nav class="navbar">
-        <a href="/index/login" class="lead">Log In</a>
-        <a href="/index/register" class="lead">Register</a>
-    </nav>
+    <div class="col-4">
+        <h3>Quizcards</h3>
+        <nav class="navbar">
+            <a href="/index/login" class="lead">Log In</a>
+            <a href="/index/register" class="lead">Register</a>
+        </nav>
 
-    {% if form == "register" %}
-        <h5>Register</h5>
-        {% include "main/messages.html" %}
-        {% include "main/register_form.html" %}
-    {% else %}
-        <h5>Log In</h5>
-        {% include "main/messages.html" %}
-        {% include "main/login_form.html" %}
-    {% endif %}
+        {% if form == "register" %}
+            <h5>Register</h5>
+            {% include "main/messages.html" %}
+            {% include "main/register_form.html" %}
+        {% else %}
+            <h5>Log In</h5>
+            {% include "main/messages.html" %}
+            {% include "main/login_form.html" %}
+        {% endif %}
+    </div>
 {% endblock content %}

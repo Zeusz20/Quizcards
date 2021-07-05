@@ -45,6 +45,25 @@ def validate_registration(request):
     return False
 
 
+def change_password(request):
+    user_id = request.session['user_id']
+    old_password = request.POST['old_password']
+    password1 = request.POST['password1']
+    password2 = request.POST['password2']
+
+    if not models.User.objects.filter(pk=user_id, password=hash_password(old_password)).exists():
+        messages.error(request, 'Wrong password.')
+        return False
+
+    if old_password == password1 or old_password == password2:
+        messages.error(request, 'New password cannot be the old one.')
+        return False
+
+    if _validate_password(password1, password2, request):
+        models.User.objects.filter(pk=user_id).update(password=hash_password(password1))
+        return True
+
+
 def _validate_username(username, request):
     validator = UnicodeUsernameValidator()
 

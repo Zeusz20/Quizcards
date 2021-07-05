@@ -15,7 +15,7 @@ class User(models.Model):
 
 
 class Deck(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=DEFAULT_LENGTH)
     uuid = models.UUIDField()
     date_created = models.DateField(auto_now_add=True)

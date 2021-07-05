@@ -1,0 +1,32 @@
+<p xmlns="http://www.w3.org/1999/html">
+    <b>Username:</b> {{ username }} <br>
+    <b>Member since:</b> {{ date_created }}
+</p>
+<hr>
+<h3>Change password</h3>
+{% include "main/messages.html" %}
+<form method="post">
+    {% csrf_token %}
+    <div class="row">
+        <div class="form-group col-md-3">
+            <label for="old_password">Current password:</label>
+            <input type="password" name="old_password" id="old_password" class="form-control">
+            <br>
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group col-md-3">
+            <label for="password1">New password:</label>
+            <input type="password" name="password1" id="password1" class="form-control">
+            <br>
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group col-md-3">
+            <label for="password2"> Confirm new password:</label>
+            <input type="password" name="password2" id="password2" class="form-control">
+            <br>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-outline-danger">Change password</button>
+</form>
