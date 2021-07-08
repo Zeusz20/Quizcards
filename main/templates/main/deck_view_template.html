@@ -1,0 +1,31 @@
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{{ deck.fields.name }}</h5>
+        <p class="card-text">{{ deck.fields.description }}</p>
+        <p class="card-text">
+            <small class="text-muted">Created on: {{ deck.fields.date_created }}</small>
+            <br>
+            <small class="text-muted">Last modified: {{ deck.fields.last_modified }}</small>
+        </p>
+        <div style="padding-left: 0" class="card-footer bg-transparent">
+            <a href="#" class="btn btn-primary">Edit</a>
+            <button type="button" class="btn btn-danger"
+                    data-bs-toggle="collapse" data-bs-target="#confirm{{ deck.pk }}"
+                    aria-controls="confirm{{ deck.pk }}" aria-expanded="false">
+                Delete
+            </button>
+            <div id="confirm{{ deck.pk }}" class="collapse mt-2">
+                <p>Are sure you want to delete <strong>{{ deck.fields.name }}</strong>?</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" name="delete" value="{{ deck.pk }}" class="btn btn-danger">Yes</button>
+                    <button type="button" class="btn btn-primary"
+                            data-bs-toggle="collapse" data-bs-target="#confirm{{ deck.pk }}"
+                            aria-controls="confirm{{ deck.pk }}" aria-expanded="false">
+                        No
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

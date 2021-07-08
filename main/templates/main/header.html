@@ -1,12 +1,16 @@
 <nav class="navbar" style="justify-content: space-evenly">
-    <p class="navbar-brand">Quizcards</p>
+    <h3>Quizcards</h3>
     <a href="/user">Home</a>
     <a href="/user?view=manage">Profile</a>
     <a href="/">Log out</a>
 
-    <form method="get">
-        <input type="search" placeholder="Search" class="form-control mr-sm-2">
-        <button type="submit" class="btn btn-primary">Search</button>
+    <form method="get" class="col-md-2">
+        <div class="input-group">
+            <input type="search" placeholder="Search" class="form-control mr-sm-2">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
     </form>
 </nav>
 

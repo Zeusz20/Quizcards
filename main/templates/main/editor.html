@@ -1,0 +1,23 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+    {% include "main/header.html" %}
+    <div class="row ml-3">
+        <form method="post">
+            {% csrf_token %}
+            <div class="input-group mb-3">
+                <div class="col-3">
+                    Deck name: <br>
+                    <input type="text" name="name" placeholder="Enter a title." required class="form-control">
+                </div>
+            </div>
+            <div class="input-group mb-3">
+                <div class="col-3">
+                    Description: <br>
+                    <textarea name="description" placeholder="Write a short description..." required style="resize: none" class="form-control"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success">Create</button>
+        </form>
+    </div>
+{% endblock content %}
