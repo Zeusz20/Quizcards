@@ -19,10 +19,21 @@ def load_view_template(name):
     template = path.join(root, 'main\\templates\\main\\' + name)
     with open(template, 'r') as file:
         raw = file.read()
-        return raw.replace('\n', '')  # replacing white characters for main script
+        return raw.replace('\n', '')  # replacing white characters for js script
 
 
 def serialize_model(model, **kwargs):
-    query_set = model.objects.filter(**kwargs) if kwargs != dict() else model.objects.all()
+    query_set = model.objects.filter(**kwargs) if kwargs != {} else model.objects.all()
     raw = serializers.serialize('json', query_set)
     return json.loads(raw)
+
+
+def decode_request(request):
+    body = request.body.decode('utf-8')
+
+    kwargs = body.split('&')
+    for kwarg in kwargs:
+        name, value = kwarg.split('=')
+        print(request.POST)
+
+    return request

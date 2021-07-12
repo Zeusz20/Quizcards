@@ -5,7 +5,7 @@ from django.contrib.auth import password_validation as pv
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from datetime import date
 from hashlib import sha256
-from . import models
+from . import models, utils
 
 
 def hash_password(password):
@@ -72,8 +72,8 @@ def _validate_username(username, request):
         messages.error(request, validator.message)
         return False
 
-    if len(username) < 8:
-        messages.error(request, 'Username must be at least 8 characters.')
+    if len(username) < 4:
+        messages.error(request, 'Username must be at least 4 characters.')
         return False
 
     if models.User.objects.filter(username=username).exists():

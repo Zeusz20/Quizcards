@@ -17,6 +17,7 @@ def index(request):
 
     login = 'login'
     register = 'register'
+
     form = request.GET['view']
 
     # prevent nonsensical urls
@@ -24,18 +25,18 @@ def index(request):
         raise Http404()
 
     if request.method == 'POST':
+        # handle login
         if form == login:
-            # handle login
             if auth.validate_login(request):
                 # create session for user
                 login_user = models.User.objects.get(username=request.POST['username'])
                 request.session['user_id'] = login_user.pk
                 return redirect('/user')
+        # handle registration
         elif form == register:
-            # handle registration
             if auth.validate_registration(request):
-                messages.success(request, 'Successful registration!')
-                return redirect('/index/login')
+                messages.success(request, 'Registration successful!')
+                return redirect('/?view=login')
 
     return render(request, 'main/index.html', {'form': form})
 
@@ -47,13 +48,12 @@ def user(request):
     user_id = request.session.get('user_id')
     models.User.objects.filter(pk=user_id).update(last_login=date.today())
     current_user = models.User.objects.get(pk=user_id)
-    template = utils.load_view_template('deck_view_template.html')
 
     context = {
         'username': current_user.username,
         'date_created': current_user.date_created,
         'decks': utils.serialize_model(models.Deck, user=current_user),
-        'template': template,
+        'template': utils.load_view_template('deck_view_template.html'),
     }
 
     if request.method == 'POST':
@@ -61,11 +61,11 @@ def user(request):
         if request.POST.get('delete'):
             deck_id = request.POST['delete']
             models.Deck.objects.filter(pk=deck_id).delete()
-            messages.success(request, 'Deck successfully deleted.')
+            messages.success(request, 'Deck deleted successfully.')
             return redirect('/user')
         # user changes his/her password
         elif auth.change_password(request):
-            messages.success(request, 'Password successfully changed.')
+            messages.success(request, 'Password changed successfully.')
             return redirect('/user')
 
     return render(request, 'main/user.html', context)
@@ -75,9 +75,12 @@ def editor(request):
     if not utils.user_exists(request):
         return redirect('/?view=login')
 
+    parent_user = models.User.objects.get(pk=request.session['user_id'])
+
     if request.method == 'POST':
-        # Deck created
-        parent_user = models.User.objects.get(pk=request.session['user_id'])
+        # need to decode request.body, because it's sent via js XMLHttpRequest
+        request = utils.decode_request(request)
+
         models.Deck(
             user=parent_user,
             name=request.POST['name'],
@@ -87,10 +90,16 @@ def editor(request):
             last_modified=date.today()
         ).save()
 
+        messages.success(request, 'Deck ' + request.POST['name'] + ' created successfully.')
         context = {
-            'decks': utils.serialize_model(models.Deck, user=parent_user)
+            'decks': utils.serialize_model(models.Deck, user=parent_user),
         }
-
         return redirect('/user', context)
 
-    return render(request, 'main/editor.html')
+    context = {
+        'decks': utils.serialize_model(models.Deck, user=parent_user),
+        'cards': list(range(1)),
+        'template': utils.load_view_template('card_view_template.html'),
+    }
+
+    return render(request, 'main/editor.html', context)

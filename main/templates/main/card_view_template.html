@@ -1,0 +1,43 @@
+<div name="card" style="outline: 1px solid gray; border-radius: 5px;" class="row my-5">    
+    <div class="col">
+        <h6>Term</h6>
+        <div name="toolbar" class="py-2"> 
+            <button type="button" name="tool" data-command="bold" style="width: 2em">
+                <b>B</b>
+            </button>
+            <button type="button" name="tool" data-command="italic" style="width: 2em">
+                <i>I</i>
+            </button>
+            <button type="button" name="tool" data-command="underline" style="width: 2em">
+                <u>U</u>
+            </button>
+            <input type="color" name="picker" style="width: 2em">
+        </div>
+        
+        <div name="term" contenteditable="true" style="height: 5em; overflow-y: scroll; outline: 1px solid gray;" class="mb-2"></div>
+        
+        <input name="term-image" type="file" accept="image/png, image/jpeg">
+    </div>
+
+    <div class="col">
+        <h6>Definition</h6>
+        <div name="toolbar" class="py-2">
+            <button type="button" name="tool" data-command="bold" style="width: 2em">
+                <b>B</b>
+            </button>
+            <button type="button" name="tool" data-command="italic" style="width: 2em">
+                <i>I</i>
+            </button>
+            <button type="button" name="tool" data-command="underline" style="width: 2em">
+                <u>U</u>
+            </button>
+            <input type="color" name="tool" style="width: 2em">
+        </div>
+        
+        <div name="definition" contenteditable="true" style="height: 5em; overflow-y: scroll; outline: 1px solid gray;" class="mb-2"></div>
+        
+        <input name="definition-image" type="file" accept="image/png, image/jpeg">
+    </div>
+
+    <button name="delete-btn" type="button" class="btn btn-danger btn-sm mt-2">Delete</button>
+</div>

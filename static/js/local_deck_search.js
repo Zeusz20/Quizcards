@@ -17,7 +17,7 @@ document.getElementById('local-deck-search').addEventListener('keyup', event => 
         // add matching decks
         filtered.forEach(deck => {
             // necessary formatting otherwise chaos ensues (chaining functions doesn't work either)
-            let formatted = template.replaceAll('{{ ', '')
+            let formatted = deckTemplate.replaceAll('{{ ', '')
             formatted = formatted.replaceAll(' }}', '')
             
             // replace placeholders with actual values
@@ -26,6 +26,7 @@ document.getElementById('local-deck-search').addEventListener('keyup', event => 
                 .replaceAll('deck.fields.description', deck.fields.description)
                 .replaceAll('deck.fields.date_created', deck.fields.date_created)
                 .replaceAll('deck.fields.last_modified', deck.fields.last_modified)
+                .replaceAll('{% csrf_token %}', getCSRFTokenTag().outerHTML)
             
             holder.innerHTML += formatted
         })

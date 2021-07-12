@@ -6,6 +6,10 @@
 
 <div id="holder">
     {% include "main/messages.html" %}
+    {% if not decks %}
+        <p class="text-muted">You have not created any decks yet.</p>
+    {% endif %}
+
     {% for deck in decks %}
         {% include "main/deck_view_template.html" %}
     {% endfor %}
@@ -16,7 +20,7 @@
     <script>
         const raw = '{{ decks }}'.replace(/&#x27;/g, '"')
         const data = JSON.parse(raw)
-        const template = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')      
+        const deckTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')      
     </script>
     {% load static %}
     <script src="{% static 'js/local_deck_search.js' %}"></script>
