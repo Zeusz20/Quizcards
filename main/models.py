@@ -24,7 +24,7 @@ class Deck(models.Model):
 
 class Card(models.Model):
     deck = models.ForeignKey(Deck, on_delete=models.CASCADE)
-    term_image = models.CharField(max_length=LENGTH)
     term = models.CharField(max_length=LENGTH)
-    definition_image = models.CharField(max_length=LENGTH)
+    term_image = models.FileField(upload_to='static/media/', null=True, blank=True)
     definition = models.CharField(max_length=LENGTH)
+    definition_image = models.FileField(upload_to='static/media', null=True, blank=True)

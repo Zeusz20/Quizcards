@@ -1,8 +1,13 @@
 <nav class="navbar" style="justify-content: space-evenly; position: sticky;">
     <h3>Quizcards</h3>
-    <a href="/user">Home</a>
-    <a href="/user?view=manage">Profile</a>
-    <a href="/">Log out</a>
+    {% if index %}
+        <a href="/?view=login">Log In</a>
+        <a href="/?view=register">Register</a>
+    {% else %}
+        <a href="/user">Home</a>
+        <a href="/user?view=manage">Profile</a>
+        <a href="/">Log out</a>
+    {% endif %}
 
     <form method="get" class="col-md-2">
         <div class="input-group">

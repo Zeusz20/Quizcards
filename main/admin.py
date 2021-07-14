@@ -1,8 +1,8 @@
 from django.contrib import admin
-from . import models
+from .models import *
 
 # Register your models here.
 
-admin.site.register(models.User)
-admin.site.register(models.Deck)
-admin.site.register(models.Card)
+admin.site.register(User)
+admin.site.register(Deck)
+admin.site.register(Card)

@@ -28,7 +28,9 @@ document.getElementById('local-deck-search').addEventListener('keyup', event => 
                 .replaceAll('deck.fields.last_modified', deck.fields.last_modified)
                 .replaceAll('{% csrf_token %}', getCSRFTokenTag().outerHTML)
             
-            holder.innerHTML += formatted
+            let template = document.createElement('template')
+            template.innerHTML = formatted.trim()
+            holder.appendChild(template)
         })
     }   
 })

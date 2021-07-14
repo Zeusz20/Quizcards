@@ -16,10 +16,11 @@ def delete_past_session(request):
 
 def load_view_template(name):
     root = Path(__file__).resolve().parent.parent
-    template = path.join(root, 'main\\templates\\main\\' + name)
+    parent = path.join('main', 'templates', 'main')
+    template = path.join(root, parent, name)
     with open(template, 'r') as file:
         raw = file.read()
-        return raw.replace('\n', '')  # replacing white characters for js script
+        return raw.replace('\n', '')  # replace new line characters for js script
 
 
 def serialize_model(model, **kwargs):
@@ -28,12 +29,34 @@ def serialize_model(model, **kwargs):
     return json.loads(raw)
 
 
-def decode_request(request):
-    body = request.body.decode('utf-8')
+def get_card_list(request):
+    terms = request.POST.getlist('terms[]')
+    term_indexes = request.POST.getlist('term-indexes[]')
+    term_images = request.FILES.getlist('term-images[]')
+    definitions = request.POST.getlist('definitions[]')
+    definition_indexes = request.POST.getlist('definition-indexes[]')
+    definition_images = request.FILES.getlist('definition-images[]')
+    data_length = len(terms)
 
-    kwargs = body.split('&')
-    for kwarg in kwargs:
-        name, value = kwarg.split('=')
-        print(request.POST)
+    cards = list()
+    term_image_index = 0
+    definition_image_index = 0
 
-    return request
+    for i in range(data_length):
+        card = dict()
+        card['term'] = terms[i]
+        card['definition'] = definitions[i]
+
+        for index in range(len(term_indexes)):
+            if term_indexes[index] != '' and index == i:
+                card['term_image'] = term_images[term_image_index]
+                term_image_index += 1
+
+        for index in range(len(definition_indexes)):
+            if definition_indexes[index] != '' and index == i:
+                card['definition_image'] = definition_images[definition_image_index]
+                definition_image_index += 1
+
+        cards.append(card)
+
+    return cards

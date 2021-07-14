@@ -4,7 +4,7 @@
     {% include "main/header.html" %}
 
     <div class="col-6">
-        <form id="editor" method="post">
+        <form id="editor" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <!-- Edit deck details -->
             Deck name:
@@ -13,12 +13,10 @@
             </div>
             Description:
             <div class="input-group mb-3">
-                <textarea name="description" placeholder="Write a short description..." required style="resize: none" class="form-control"></textarea>
+                <textarea name="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
             </div>
             <div class="text-center">
-                <small id="warning" class="text-danger mb-3" style="visibility: hidden">You've already made a deck with the same name.</small>
-                <br>
-                <button id="save-btn" type="submit" class="btn btn-success">Create</button>
+                <button id='save-btn' type="button" disabled class="btn btn-success">Save</button>
             </div>
             <hr>
     
@@ -28,8 +26,8 @@
                     {% include "main/card_view_template.html" %}
                 {% endfor %}
             </div>
-            <button id='new-card' type="button" class="btn btn-secondary col-12">+ Add new card +</button>
-        </form>
+            <button id='new-card' type="button" class="btn btn-secondary col-12 mb-3">+ Add new card +</button>
+        </div>
     </div>
 {% endblock content %}
 
@@ -39,7 +37,7 @@
         const data = JSON.parse(raw)
         const cardTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     </script>
+
     {% load static %}
     <script src="{% static 'js/editor.js' %}"></script>
-    <script src="{% static 'js/save_deck.js' %}"></script>
 {% endblock script %}
