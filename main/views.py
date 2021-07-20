@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import render, redirect
@@ -83,33 +85,64 @@ def editor(request):
 
     parent_user = User.objects.get(pk=request.session['user_id'])
 
+    # load deck
+    if request.method == 'GET' and request.GET.get('uuid') is not None:
+        uuid = request.GET['uuid']
+        deck = Deck.objects.get(uuid=request.GET['uuid'])
+        cards = list(Card.objects.filter(deck=deck))
+
+        context = {
+            'deck': utils.serialize_model(Deck, uuid=uuid)[0],
+            'cards': utils.serialize_model(Card, deck=deck),
+            'num_of_cards': range(len(cards)),
+            'template': utils.load_view_template('card_view_template.html'),
+            'original': utils.get_deck_json(deck)
+        }
+
+        return render(request, 'main/editor.html', context)
+
+    # save deck
     if request.method == 'POST':
+        data = json.loads(request.POST['deck'])
+
         deck = Deck(
             user=parent_user,
-            name=request.POST['name'],
-            description=request.POST['description'],
-            uuid=uuid4(),
+            name=data['name'],
+            description=data['description'],
+            uuid=data['uuid'] if data['uuid'] != '' else uuid4(),
             date_created=date.today(),
             last_modified=date.today()
         )
         deck.save()
 
-        for card in utils.get_card_list(request):
+        term_images = request.FILES.getlist('term-image')
+        definition_images = request.FILES.getlist('definition-images')
+
+        for card in data['cards']:
+            term_image = term_images.pop(0) if card['term_image'] else None
+            definition_image = definition_images.pop(0) if card['definition_image'] else None
+
             Card(
                 deck=deck,
                 term=card['term'],
-                term_image=card.get('term_image'),
+                term_image=term_image,
                 definition=card['definition'],
-                definition_image=card.get('definition_image')
+                definition_image=definition_image
             ).save()
 
-        messages.success(request, 'Deck {} created successfully.'.format(request.POST['name']))
+        messages.success(request, 'Deck {} created successfully.'.format(data['name']))
         return redirect('/user')
 
     context = {
-        'decks': utils.serialize_model(Deck, user=parent_user),
-        'cards': list(range(1)),
+        'num_of_cards': list(range(1)),
         'template': utils.load_view_template('card_view_template.html'),
     }
 
     return render(request, 'main/editor.html', context)
+
+
+def form(request):
+    if request.method == 'POST':
+        print(request.POST)
+
+    return render(request, 'main/form.html')

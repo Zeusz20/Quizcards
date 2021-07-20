@@ -16,12 +16,9 @@
         
         <div name="term" contenteditable="true" style="height: 5em; overflow-y: scroll;" class="form-control mb-2"></div>
         
-        <button type="button" name="del-img" style="width: 2em" class="btn-danger">X</button>
-        <div name="term-image-wrapper">
-            <input type="hidden" name="term-indexes[]">
-            <input type="file" name="term-images[]" accept="image/png, image/jpeg" class="mb-2">
-        </div>
-        <img name="term-preview" src="#" alt="" style="display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;">
+        <input type="file" name="term-image" accept="image/png, image/jpeg" class="mb-2">
+        <img name="term-preview" src="" alt="" style="display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;">
+        <button type="button" name="del-term-img" style="width: 2em" class="btn-danger">X</button>
     </div>
 
     <div class="col">
@@ -41,12 +38,9 @@
         
         <div name="definition" contenteditable="true" style="height: 5em; overflow-y: scroll;" class="form-control mb-2"></div>
         
-        <button type="button" name="del-img" style="width: 2em" class="btn-danger">X</button>
-        <div name="definition-image-wrapper">
-            <input type="hidden" name="definition-indexes[]">
-            <input type="file" name="definition-images[]" accept="image/png, image/jpeg" class="mb-2">
-        </div> 
-        <img name="definition-preview" src="#" alt="" style="display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;">
+        <input type="file" name="definition-image" accept="image/png, image/jpeg" class="mb-2">
+        <img name="definition-preview" src="" alt="" style="display: block; max-width: 64px; max-height: 64px; width: auto; height: auto;">
+        <button type="button" name="del-definition-img" style="width: 2em" class="btn-danger">X</button>
     </div>
 
     <button name="delete-btn" type="button" class="btn btn-danger btn-sm mt-2">Delete</button>

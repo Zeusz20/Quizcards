@@ -6,23 +6,30 @@
     <div class="col-6">
         <form id="editor" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            
+            {% if request.GET.uuid %}
+                <!-- Load original deck data -->
+                <input type="hidden" name="original" value="{{ original }}">
+            {% endif %}
+
             <!-- Edit deck details -->
             Deck name:
             <div class="input-group mb-3">
-                <input type="text" name="name" placeholder="Enter a title." required class="form-control">
+                <input type="text" id="name" placeholder="Enter a title." required class="form-control">
             </div>
             Description:
             <div class="input-group mb-3">
-                <textarea name="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
+                <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
             </div>
             <div class="text-center">
                 <button id='save-btn' type="button" disabled class="btn btn-success">Save</button>
             </div>
+            <input type="hidden" id="uuid" value="{{ request.GET.uuid }}">
             <hr>
     
             <!-- Edit cards -->
             <div id="container" class="container">
-                {% for i in cards %}
+                {% for i in num_of_cards %}
                     {% include "main/card_view_template.html" %}
                 {% endfor %}
             </div>
@@ -33,8 +40,8 @@
 
 {% block script %}
     <script>
-        const raw = '{{ decks }}'.replace(/&#x27;/g, '"')
-        const data = JSON.parse(raw)
+        const rawDeck = '{{ deck }}'.replace(/&#x27;/g, '"')
+        const rawCards = '{{ cards }}'.replace(/&#x27;/g, '"').replace(/&quot;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
         const cardTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     </script>
 

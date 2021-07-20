@@ -1,6 +1,7 @@
 import json
 
 from django.core import serializers
+from .models import *
 from pathlib import Path
 from os import path
 
@@ -60,3 +61,22 @@ def get_card_list(request):
         cards.append(card)
 
     return cards
+
+
+def get_deck_json(deck):
+    deck_json = {
+        'name': deck.name,
+        'description': deck.description,
+        'uuid': deck.uuid,
+        'cards': list()
+    }
+
+    for card_obj in list(Card.objects.filter(deck=deck)):
+        deck_json['cards'].append({
+            'term': card_obj.term,
+            'term_image': card_obj.term_image != '',    # has term image
+            'definition': card_obj.definition,
+            'definition_image': card_obj.definition_image != '',    # has definition image
+        })
+
+    return deck_json
