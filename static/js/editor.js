@@ -73,20 +73,8 @@ function updateDeleteButton() {
 function updateFormattingButtons() {
     document.getElementsByName('tool').forEach(tool => {
         tool.addEventListener('click', () => {
-            document.execCommand(tool.dataset['command'], false, null)
-            
-            // get neighboring element nodes
-            let neighbors = Array.from(tool.parentElement.parentElement.childNodes).filter(element => {
-                return element.nodeType == Node.ELEMENT_NODE   // filters out text nodes
-            })
-            
-            // get corresponding editor to the clicked formatting button
-            let editor = neighbors.filter(element => {
-                let name = element.getAttribute('name')
-                return name == 'term' || name == 'definition'
-            })[0]
-    
-            editor.focus()
+            document.execCommand(tool.dataset['command'], false, null)            
+            getEditor(tool).focus()
         })
     })
 }
@@ -96,8 +84,28 @@ function updateColorPickers() {
         picker.addEventListener('change', () => {
             document.execCommand('styleWithCSS', false,  true)
             document.execCommand('foreColor', false, picker.value)
+            getEditor(picker).focus()
         })
     })
+}
+
+function getEditor(child) {
+    const getSiblings = (node) => {
+        return Array.from(node.parentElement.childNodes)
+            .filter(element => element.nodeType === Node.ELEMENT_NODE)  // filter out text nodes
+    }
+
+    const getEditor = (node) => {
+        let siblings = getSiblings(node)
+        let editors = siblings.filter(element => {
+            let name = element.getAttribute('name')
+            return name == 'term' || name == 'definition'
+        })
+
+        return (editors.length != 0) ? editors[0] : getEditor(node.parentElement)
+    }
+    
+    return getEditor(child)
 }
 
 function updateImageButtons(type) {
@@ -125,8 +133,8 @@ function updateImageButtons(type) {
             // get corresponding image input and preview
             const file = Array.from(btn.parentElement.childNodes).filter(element => element.name == imageName)[0]
             const preview = Array.from(btn.parentElement.childNodes).filter(element => element.name == previewName)[0]
-            file.value = '';
-            preview.src = '';
+            file.value = ''
+            preview.src = ''
             hideAndShowImageControls(imageName, previewName, deleteBtnName)
         }
     })
@@ -163,7 +171,6 @@ function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
 
 function save() {
     warn = false
-    const form = document.getElementById('editor')
 
     // disable color pickers so they are not sent with POST
     Array.from(document.getElementsByTagName('input'))
@@ -175,6 +182,8 @@ function save() {
     deck.setAttribute('type', 'hidden')
     deck.setAttribute('name', 'deck')
     deck.setAttribute('value', getDeckJson())
+    
+    const form = document.getElementById('editor')
     form.appendChild(deck)
     form.submit()
 }
@@ -188,21 +197,33 @@ function getDeckJson() {
     }
 
     document.getElementsByName('card').forEach(element => {
-        let term = Array.from(element.getElementsByTagName('div')).filter(div => div.getAttribute('name') == 'term')[0]
-        let definition = Array.from(element.getElementsByTagName('div')).filter(div => div.getAttribute('name') == 'definition')[0]
-        let images = Array.from(element.getElementsByTagName('input')).filter(input => input.getAttribute('type') == 'file')
+        let term = Array.from(element.getElementsByTagName('div'))
+            .filter(div => div.getAttribute('name') == 'term')[0]
+        
+        let definition = Array.from(element.getElementsByTagName('div'))
+            .filter(div => div.getAttribute('name') == 'definition')[0]
+        
+        let term_image = Array.from(element.getElementsByTagName('img'))
+            .filter(img => img.getAttribute('name') == 'term-preview')[0]
+        
+        let definition_image = Array.from(element.getElementsByTagName('img'))
+            .filter(img => img.getAttribute('name') == 'definition-preview')[0]
 
         const card = {
             'term': term.innerHTML,
-            'term_image': (images[0].value !== ''),     // has term image
+            'term_image': getImage(term_image),
             'definition': definition.innerHTML,
-            'definition_image': (images[1].value !== '')    // has definition image
+            'definition_image': getImage(definition_image)
         }
 
         deck.cards.push(card)
     })
 
     return JSON.stringify(deck)
+}
+
+function getImage(img) {
+    return img.getAttribute('src').replace(window.location.origin + '/', '')
 }
 
 function load(deck, cards) {
@@ -227,8 +248,20 @@ function load(deck, cards) {
         definitions[i].innerHTML = cards[i].fields.definition
         definition_previews[i].src = loadImage(cards[i].fields.definition_image)
     }
+
+    appendOld(deck, cards)
 }
 
 function loadImage(src) {
     return (src === '') ? src : window.location.origin + '/' + src
+}
+
+/** Used when editing an existing deck */
+function appendOld(oldDeck, oldCards) {
+    const input = document.createElement('input')
+    input.setAttribute('type', 'hidden')
+    input.setAttribute('name', 'old')
+    input.setAttribute('value', getDeckJson())
+
+    document.getElementById('editor').appendChild(input)
 }

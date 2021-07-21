@@ -1,8 +1,8 @@
 import json
 
 from django.contrib import messages
-from django.http import Http404
 from django.shortcuts import render, redirect
+from django.views.generic import View
 from datetime import date
 from uuid import uuid4
 from . import authentication as auth, utils
@@ -12,71 +12,167 @@ from .models import *
 # Create your views here.
 
 
-def index(request):
-    utils.delete_past_session(request)
+class IndexView(View):
+    template_name = 'main/index.html'
 
-    if request.GET.get('view') is None:
-        return redirect('/?view=login')
+    def get(self, request):
+        utils.delete_past_session(request)
 
-    login = 'login'
-    register = 'register'
+        if request.GET.get('view') is None:
+            return redirect('/?view=login')
 
-    form = request.GET['view']
+        context = {
+            'form': request.GET['view'],
+            'index': True,  # this changes the header depending on if the user is authenticated
+        }
 
-    # prevent nonsensical urls
-    if form != login and form != register:
-        raise Http404()
+        return render(request, self.template_name, context)
 
-    if request.method == 'POST':
-        # handle login
-        if form == login:
-            if auth.validate_login(request):
-                # create session for user
-                login_user = User.objects.get(username=request.POST['username'])
-                request.session['user_id'] = login_user.pk
-                return redirect('/user')
-        # handle registration
-        elif form == register:
-            if auth.validate_registration(request):
-                messages.success(request, 'Registration successful!')
-                return redirect('/?view=login')
+    def post(self, request):
+        if request.GET['view'] == 'register':
+            self._handle_registration(request)
+            return redirect('/?view=login')
+        else:
+            self._handle_login(request)
+            return redirect('/user')
 
-    context = {
-        'form': form,
-        'index': True   # this changes the header depending on if the user is authenticated
-    }
+    def _handle_login(self, request):
+        if auth.validate_login(request):
+            user = User.objects.get(username=request.POST['username'])
+            request.session['user_id'] = user.pk    # create session for user
 
-    return render(request, 'main/index.html', context)
+    def _handle_registration(self, request):
+        if auth.validate_registration(request):
+            messages.success(request, 'Registration successful!')
 
 
-def user(request):
-    if not utils.user_exists(request):
-        return redirect('/?view=login')
+class UserView(View):
+    template_name = 'main/user.html'
 
-    user_id = request.session.get('user_id')
-    User.objects.filter(pk=user_id).update(last_login=date.today())
-    current_user = User.objects.get(pk=user_id)
+    def get(self, request):
+        if not utils.user_exists(request):
+            return redirect('/?view=login')
 
-    context = {
-        'username': current_user.username,
-        'date_created': current_user.date_created,
-        'decks': utils.serialize_model(Deck, user=current_user),
-        'template': utils.load_view_template('deck_view_template.html'),
-    }
+        user_id = request.session.get('user_id')
+        User.objects.filter(pk=user_id).update(last_login=date.today())
 
-    if request.method == 'POST':
-        # user deletes a deck
+        context = self._get_user_data(user_id)
+        return render(request, self.template_name, context)
+
+    def post(self, request):
         if request.POST.get('delete'):
-            deck_id = request.POST['delete']
-            Deck.objects.filter(pk=deck_id).delete()
-            messages.success(request, 'Deck deleted successfully.')
+            self._handle_delete(request)    # user deletes a deck
             return redirect('/user')
-        # user changes his/her password
-        elif auth.change_password(request):
-            messages.success(request, 'Password changed successfully.')
+        else:
+            self._handle_password_change(request)
             return redirect('/user')
 
-    return render(request, 'main/user.html', context)
+    def _get_user_data(self, user_id):
+        user = User.objects.get(pk=user_id)
+
+        return {
+            'username': user.username,
+            'date_created': user.date_created,
+            'decks': utils.serialize_model(Deck, user=user),
+            'template': utils.load_view_template('deck_view_template.html'),
+        }
+
+    def _handle_delete(self, request):
+        deck_id = request.POST['delete']
+        deck = Deck.objects.get(pk=deck_id)
+        name = deck.name
+        deck.delete()
+        messages.success(request, 'Deck "{}" was successfully deleted.'.format(name))
+
+    def _handle_password_change(self, request):
+        if auth.change_password(request):
+            messages.success(request, 'Password changed successfully.')
+
+
+class EditorView(View):
+    template_name = 'main/editor.html'
+
+    def get(self, request):
+        if not utils.user_exists(request):
+            return redirect('/?view=login')
+
+        if request.GET.get('uuid') is not None:
+            context = self._load_deck(request)
+            return render(request, self.template_name, context)
+        else:
+            context = self._create_deck()
+            return render(request, self.template_name, context)
+
+    def post(self, request):
+        old = json.loads(request.POST['old']) if request.POST.get('old') else None
+        new = json.loads(request.POST['deck'])
+
+        if old is None:
+            self._save_deck(request, new)
+            return redirect('/user')
+        else:
+            self._update_deck(request, old, new)
+            return redirect('/user')
+
+    def _create_deck(self):
+        return {
+            'num_of_cards': list(range(1)),
+            'template': utils.load_view_template('card_view_template.html'),
+        }
+
+    def _load_deck(self, request):
+        uuid = request.GET['uuid']
+        deck = Deck.objects.get(uuid=request.GET['uuid'])
+        cards = list(Card.objects.filter(deck=deck))
+
+        return {
+            'deck': utils.serialize_model(Deck, uuid=uuid)[0],
+            'cards': utils.serialize_model(Card, deck=deck),
+            'num_of_cards': range(len(cards)),
+            'template': utils.load_view_template('card_view_template.html'),
+        }
+
+    def _save_deck(self, request, data):
+        user = User.objects.get(pk=request.session['user_id'])
+        data['uuid'] = uuid4()
+
+        Deck(
+            user=user,
+            name=data['name'],
+            description=data['description'],
+            uuid=data['uuid'],
+            date_created=date.today(),
+            last_modified=date.today()
+        ).save()
+
+        self._save_cards(request, data)
+        messages.success(request, 'Deck "{}" created successfully.'.format(data['name']))
+
+    def _update_deck(self, request, old, new):
+        deck = Deck.objects.get(uuid=old['uuid'])
+        cards = list(Card.objects.filter(deck=deck))
+        cards = list(map(lambda card: utils.serialize_model(Card, pk=card.pk).pop(), cards))
+
+
+    def _save_cards(self, request, data):
+        deck = Deck.objects.get(uuid=data['uuid'])
+        term_images = request.FILES.getlist('term-image')
+        definition_images = request.FILES.getlist('definition-images')
+
+        for card in data['cards']:
+            term_image = term_images.pop(0) if card['term_image'] != '' else None
+            definition_image = definition_images.pop(0) if card['definition_image'] != '' else None
+
+            Card(
+                deck=deck,
+                term=card['term'],
+                term_image=term_image,
+                definition=card['definition'],
+                definition_image=definition_image
+            ).save()
+
+    def _update_cards(self, request, old, new):
+        pass
 
 
 def editor(request):
@@ -96,13 +192,17 @@ def editor(request):
             'cards': utils.serialize_model(Card, deck=deck),
             'num_of_cards': range(len(cards)),
             'template': utils.load_view_template('card_view_template.html'),
-            'original': utils.get_deck_json(deck)
         }
 
         return render(request, 'main/editor.html', context)
 
     # save deck
     if request.method == 'POST':
+
+        original = None
+        if request.POST.get('original') is not None:
+            original = json.loads(request.POST['original'])
+
         data = json.loads(request.POST['deck'])
 
         deck = Deck(
@@ -119,8 +219,8 @@ def editor(request):
         definition_images = request.FILES.getlist('definition-images')
 
         for card in data['cards']:
-            term_image = term_images.pop(0) if card['term_image'] else None
-            definition_image = definition_images.pop(0) if card['definition_image'] else None
+            term_image = term_images.pop(0) if card['term_image'] != '' else None
+            definition_image = definition_images.pop(0) if card['definition_image'] != '' else None
 
             Card(
                 deck=deck,
@@ -139,10 +239,3 @@ def editor(request):
     }
 
     return render(request, 'main/editor.html', context)
-
-
-def form(request):
-    if request.method == 'POST':
-        print(request.POST)
-
-    return render(request, 'main/form.html')

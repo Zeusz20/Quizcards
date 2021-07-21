@@ -15,8 +15,8 @@
                 Delete
             </button>
             <div id="confirm-{{ deck.pk }}" class="collapse mt-2">
-                <p>Are sure you want to delete <strong>{{ deck.fields.name }}</strong>?</p>
                 <form method="post">
+                    <p>Are sure you want to delete <strong>{{ deck.fields.name }}</strong>?</p>
                     {% csrf_token %}
                     <button type="submit" name="delete" value="{{ deck.pk }}" class="btn btn-danger">Yes</button>
                     <button type="button" class="btn btn-primary"
