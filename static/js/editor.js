@@ -13,6 +13,7 @@ function init() {
         const cards = JSON.parse(rawCards)
         load(deck, cards)
     }
+
     updateButtons()
 }
 
@@ -31,16 +32,16 @@ function warnUser() {
 /* DECK EDITING */
 
 function addNewCard() {
-    const container = document.getElementById('container')
     let template = document.createElement('template')
     template.innerHTML = cardTemplate.trim()
-    container.appendChild(template.content.firstChild)
+    
+    document.getElementById('container').appendChild(template.content.firstChild)
     updateButtons()
 }
 
 function updateButtons() {
     updateSaveButton()
-    updateDeleteButton()
+    updateDeleteButtons()
     updateFormattingButtons()
     updateColorPickers()
     updateImageButtons('term')
@@ -61,7 +62,7 @@ function updateSaveButton() {
     saveBtn.onclick = save
 }
 
-function updateDeleteButton() {
+function updateDeleteButtons() {
     document.getElementsByName('delete-btn').forEach(btn => {
         btn.onclick = () => {
             const card = btn.parentElement
@@ -177,18 +178,22 @@ function save() {
         .filter(element => element.getAttribute('type') == 'color')
         .forEach(input => input.removeAttribute('name'))
 
+    // are we editing an existing deck?
+    let update = (document.getElementsByName('update').length !== 0)
+
     // initialize deck data
     const deck = document.createElement('input')
     deck.setAttribute('type', 'hidden')
     deck.setAttribute('name', 'deck')
-    deck.setAttribute('value', getDeckJson())
+    deck.setAttribute('value', getDeckJson(update))
     
     const form = document.getElementById('editor')
     form.appendChild(deck)
     form.submit()
 }
 
-function getDeckJson() {
+/** @param {boolean} addPrimaryKey - used when editing an existing deck */
+function getDeckJson(addPrimaryKey) {
     const deck = {
         'name': document.getElementById('name').value,
         'description': document.getElementById('description').value,
@@ -197,33 +202,43 @@ function getDeckJson() {
     }
 
     document.getElementsByName('card').forEach(element => {
-        let term = Array.from(element.getElementsByTagName('div'))
-            .filter(div => div.getAttribute('name') == 'term')[0]
-        
-        let definition = Array.from(element.getElementsByTagName('div'))
-            .filter(div => div.getAttribute('name') == 'definition')[0]
-        
-        let term_image = Array.from(element.getElementsByTagName('img'))
-            .filter(img => img.getAttribute('name') == 'term-preview')[0]
-        
-        let definition_image = Array.from(element.getElementsByTagName('img'))
-            .filter(img => img.getAttribute('name') == 'definition-preview')[0]
-
         const card = {
-            'term': term.innerHTML,
-            'term_image': getImage(term_image),
-            'definition': definition.innerHTML,
-            'definition_image': getImage(definition_image)
+            'term': getText(element, 'term'),
+            'term_image': getImage(element, 'term'),
+            'definition': getText(element, 'definition'),
+            'definition_image': getImage(element, 'definition')
         }
-
         deck.cards.push(card)
     })
+
+    if(addPrimaryKey) {
+        const ids = Array.from(document.getElementsByName('card')).map(card => card.getAttribute('id'))
+        for(let i = 0; i < deck.cards.length; i++) {
+            deck.cards[i].pk = parseInt(ids[i])
+        }
+    }
 
     return JSON.stringify(deck)
 }
 
-function getImage(img) {
-    return img.getAttribute('src').replace(window.location.origin + '/', '')
+function getText(node, type) {
+    const text = Array.from(node.getElementsByTagName('div')).filter(div => div.getAttribute('name') == type)[0]
+    return text.innerHTML
+}
+
+function getImage(node, type) {
+    const inputName = type + '-image'
+    const previewName = type + '-preview'
+
+    // check input tag in case a new image has been uploaded
+    let image = Array.from(node.getElementsByTagName('input')).filter(input => input.getAttribute('name') == inputName)[0]
+    if(image.value !== '') {
+        return getFileName(image.value)
+    }
+
+    // check preview img tag in case of preloaded images (used when editing an existing deck)
+    image = Array.from(node.getElementsByTagName('img')).filter(img => img.getAttribute('name') == previewName)[0]
+    return getFileName(image.getAttribute('src'))
 }
 
 function load(deck, cards) {
@@ -249,19 +264,38 @@ function load(deck, cards) {
         definition_previews[i].src = loadImage(cards[i].fields.definition_image)
     }
 
-    appendOld(deck, cards)
+    addUpdateFlag()
+    assignIds()
 }
 
 function loadImage(src) {
     return (src === '') ? src : window.location.origin + '/' + src
 }
 
-/** Used when editing an existing deck */
-function appendOld(oldDeck, oldCards) {
+/** Adds an update input tag so the server can resolve the POST accordingly */
+function addUpdateFlag() {
     const input = document.createElement('input')
     input.setAttribute('type', 'hidden')
-    input.setAttribute('name', 'old')
-    input.setAttribute('value', getDeckJson())
-
+    input.setAttribute('name', 'update')
+    input.setAttribute('value', true)
     document.getElementById('editor').appendChild(input)
+}
+
+/** Assigns ids to the cards from the database */
+function assignIds() {
+    const ids = JSON.parse(rawCards)
+    let cards = document.getElementsByName('card')
+    
+    for(let i = 0; i < cards.length; i++) {
+        cards[i].setAttribute('id', ids[i].pk)
+    }
+}
+
+function getFileName(path) {
+    let startIndex = (path.indexOf('\\') >= 0 ? path.lastIndexOf('\\') : path.lastIndexOf('/'))
+    let name = path.substring(startIndex)
+    if(name.indexOf('\\') === 0 || name.indexOf('/') === 0) {
+        name = name.substring(1)
+    }
+    return name
 }

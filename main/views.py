@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.views.generic import View
 from datetime import date
-from uuid import uuid4
 from . import authentication as auth, utils
 from .models import *
 
@@ -48,6 +47,7 @@ class IndexView(View):
 
 class UserView(View):
     template_name = 'main/user.html'
+    dynamic_template = utils.load_view_template('main/deck_view_template.html')
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -74,7 +74,7 @@ class UserView(View):
             'username': user.username,
             'date_created': user.date_created,
             'decks': utils.serialize_model(Deck, user=user),
-            'template': utils.load_view_template('deck_view_template.html'),
+            'template': self.dynamic_template,
         }
 
     def _handle_delete(self, request):
@@ -82,7 +82,7 @@ class UserView(View):
         deck = Deck.objects.get(pk=deck_id)
         name = deck.name
         deck.delete()
-        messages.success(request, 'Deck "{}" was successfully deleted.'.format(name))
+        messages.success(request, f'Deck "{name}" was successfully deleted.')
 
     def _handle_password_change(self, request):
         if auth.change_password(request):
@@ -91,6 +91,7 @@ class UserView(View):
 
 class EditorView(View):
     template_name = 'main/editor.html'
+    dynamic_template = utils.load_view_template('main/card_view_template.html')
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -104,20 +105,20 @@ class EditorView(View):
             return render(request, self.template_name, context)
 
     def post(self, request):
-        old = json.loads(request.POST['old']) if request.POST.get('old') else None
-        new = json.loads(request.POST['deck'])
+        update = request.POST.get('update')
+        data = json.loads(request.POST['deck'])
 
-        if old is None:
-            self._save_deck(request, new)
+        if update is not None:
+            self._update_deck(request, data)
             return redirect('/user')
         else:
-            self._update_deck(request, old, new)
+            self._save_deck(request, data)
             return redirect('/user')
 
     def _create_deck(self):
         return {
             'num_of_cards': list(range(1)),
-            'template': utils.load_view_template('card_view_template.html'),
+            'template': self.dynamic_template
         }
 
     def _load_deck(self, request):
@@ -129,94 +130,31 @@ class EditorView(View):
             'deck': utils.serialize_model(Deck, uuid=uuid)[0],
             'cards': utils.serialize_model(Card, deck=deck),
             'num_of_cards': range(len(cards)),
-            'template': utils.load_view_template('card_view_template.html'),
+            'template': self.dynamic_template,
         }
 
     def _save_deck(self, request, data):
+        from uuid import uuid4
+
         user = User.objects.get(pk=request.session['user_id'])
         data['uuid'] = uuid4()
 
-        Deck(
+        deck = Deck(
             user=user,
             name=data['name'],
             description=data['description'],
             uuid=data['uuid'],
             date_created=date.today(),
             last_modified=date.today()
-        ).save()
-
-        self._save_cards(request, data)
-        messages.success(request, 'Deck "{}" created successfully.'.format(data['name']))
-
-    def _update_deck(self, request, old, new):
-        deck = Deck.objects.get(uuid=old['uuid'])
-        cards = list(Card.objects.filter(deck=deck))
-        cards = list(map(lambda card: utils.serialize_model(Card, pk=card.pk).pop(), cards))
-
-
-    def _save_cards(self, request, data):
-        deck = Deck.objects.get(uuid=data['uuid'])
-        term_images = request.FILES.getlist('term-image')
-        definition_images = request.FILES.getlist('definition-images')
-
-        for card in data['cards']:
-            term_image = term_images.pop(0) if card['term_image'] != '' else None
-            definition_image = definition_images.pop(0) if card['definition_image'] != '' else None
-
-            Card(
-                deck=deck,
-                term=card['term'],
-                term_image=term_image,
-                definition=card['definition'],
-                definition_image=definition_image
-            ).save()
-
-    def _update_cards(self, request, old, new):
-        pass
-
-
-def editor(request):
-    if not utils.user_exists(request):
-        return redirect('/?view=login')
-
-    parent_user = User.objects.get(pk=request.session['user_id'])
-
-    # load deck
-    if request.method == 'GET' and request.GET.get('uuid') is not None:
-        uuid = request.GET['uuid']
-        deck = Deck.objects.get(uuid=request.GET['uuid'])
-        cards = list(Card.objects.filter(deck=deck))
-
-        context = {
-            'deck': utils.serialize_model(Deck, uuid=uuid)[0],
-            'cards': utils.serialize_model(Card, deck=deck),
-            'num_of_cards': range(len(cards)),
-            'template': utils.load_view_template('card_view_template.html'),
-        }
-
-        return render(request, 'main/editor.html', context)
-
-    # save deck
-    if request.method == 'POST':
-
-        original = None
-        if request.POST.get('original') is not None:
-            original = json.loads(request.POST['original'])
-
-        data = json.loads(request.POST['deck'])
-
-        deck = Deck(
-            user=parent_user,
-            name=data['name'],
-            description=data['description'],
-            uuid=data['uuid'] if data['uuid'] != '' else uuid4(),
-            date_created=date.today(),
-            last_modified=date.today()
         )
-        deck.save()
 
+        deck.save()
+        self._save_cards(request, deck, data)
+        messages.success(request, f'Deck "{deck.name}" created successfully.')
+
+    def _save_cards(self, request, deck, data):
         term_images = request.FILES.getlist('term-image')
-        definition_images = request.FILES.getlist('definition-images')
+        definition_images = request.FILES.getlist('definition-image')
 
         for card in data['cards']:
             term_image = term_images.pop(0) if card['term_image'] != '' else None
@@ -230,12 +168,79 @@ def editor(request):
                 definition_image=definition_image
             ).save()
 
-        messages.success(request, 'Deck {} created successfully.'.format(data['name']))
-        return redirect('/user')
+    def _update_deck(self, request, data):
+        deck = Deck.objects.get(uuid=data['uuid'])
+        deck.last_modified = date.today()
+        self._update(deck, data, 'name', 'description')
+        self._update_cards(request, deck, data)
 
-    context = {
-        'num_of_cards': list(range(1)),
-        'template': utils.load_view_template('card_view_template.html'),
-    }
+    def _update_cards(self, request, deck, data):
+        cards = list(Card.objects.filter(deck=deck))
 
-    return render(request, 'main/editor.html', context)
+        for card in cards:
+            # get corresponding card by primary key from POST
+            new = list(filter(lambda post: card.pk == post['pk'], data['cards']))
+            try:
+                new = new.pop()
+                self._update(card, new, 'term', 'definition')
+                self._update_images(request, card, new)
+            except IndexError:
+                # card is not present in POST because it was deleted
+                card.delete()
+
+        # filter out and save newly added cards
+        data['cards'] = list(filter(lambda card: card['pk'] is None, data['cards']))
+        self._save_cards(request, deck, data)
+
+        self._clean_up_orphaned_files()
+
+    def _update_images(self, request, card, new):
+        from os.path import basename
+
+        modified = False
+        term_images = request.FILES.getlist('term-image')
+        definition_images = request.FILES.getlist('definition_image')
+
+        if basename(card.term_image.name) != new['term_image']:
+            term_image = term_images.pop(0) if new['term_image'] != '' else None
+            card.term_image = term_image
+            modified = True
+        if basename(card.definition_image.name) != new['definition_image']:
+            definition_image = definition_images.pop(0) if new['definition_image'] else None
+            card.definition_image = definition_image
+            modified = True
+
+        if modified:
+            card.save()
+
+    def _update(self, model, data, *keys):
+        """
+        Parameters
+        ----------
+        model : Model
+                The model to update
+        data : dict
+                Contains the new data for the model.
+        *keys :
+                Which fields are need to be updated.
+        """
+        modified = False
+
+        for key in keys:
+            if model.__dict__[key] != data[key]:
+                model.__dict__[key] = data[key]
+                modified = True
+
+        if modified:
+            model.save()
+
+    def _clean_up_orphaned_files(self):
+        # TODO
+        from django.conf import settings
+        from os import listdir
+
+        cards = list(Card.objects.all())
+        images = list(map(lambda card: (card.term_image, card.definition_image), cards))
+        term_images, definition_images = zip(*images)
+        for file in listdir(settings.MEDIA_ROOT):
+            pass

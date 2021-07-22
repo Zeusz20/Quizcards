@@ -16,7 +16,7 @@ def delete_past_session(request):
 
 def load_view_template(name):
     root = Path(__file__).resolve().parent.parent
-    parent = path.join('main', 'templates', 'main')
+    parent = path.join('main', 'templates')
     template = path.join(root, parent, name)
     with open(template, 'r') as file:
         raw = file.read()
@@ -24,6 +24,15 @@ def load_view_template(name):
 
 
 def serialize_model(model, **kwargs):
-    query_set = model.objects.filter(**kwargs) if kwargs != {} else model.objects.all()
+    """
+    Returns a list of model objects that fit the requirements given in **kwargs.
+    Parameters
+    ----------
+    model : Model
+            The model to serialize.
+    **kwargs : dict
+            Filters db entries. If empty defaults to filtering by the primary key.
+    """
+    query_set = model.objects.filter(**kwargs) if kwargs != {} else model.objects.get(pk=model.pk)
     raw = serializers.serialize('json', query_set)
     return json.loads(raw)
