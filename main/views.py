@@ -163,9 +163,9 @@ class EditorView(View):
             Card(
                 deck=deck,
                 term=card['term'],
-                term_image=term_image,
+                term_image=self._make_unique(term_image),
                 definition=card['definition'],
-                definition_image=definition_image
+                definition_image=self._make_unique(definition_image)
             ).save()
 
     def _update_deck(self, request, data):
@@ -192,8 +192,6 @@ class EditorView(View):
         data['cards'] = list(filter(lambda card: card['pk'] is None, data['cards']))
         self._save_cards(request, deck, data)
 
-        self._clean_up_orphaned_files()
-
     def _update_images(self, request, card, new):
         from os.path import basename
 
@@ -203,11 +201,11 @@ class EditorView(View):
 
         if basename(card.term_image.name) != new['term_image']:
             term_image = term_images.pop(0) if new['term_image'] != '' else None
-            card.term_image = term_image
+            card.term_image = self._make_unique(term_image)
             modified = True
         if basename(card.definition_image.name) != new['definition_image']:
             definition_image = definition_images.pop(0) if new['definition_image'] else None
-            card.definition_image = definition_image
+            card.definition_image = self._make_unique(definition_image)
             modified = True
 
         if modified:
@@ -234,13 +232,14 @@ class EditorView(View):
         if modified:
             model.save()
 
-    def _clean_up_orphaned_files(self):
-        # TODO
-        from django.conf import settings
-        from os import listdir
+    def _make_unique(self, file, unique_id_length=7):
+        from random import choice
+        from string import ascii_letters, digits
 
-        cards = list(Card.objects.all())
-        images = list(map(lambda card: (card.term_image, card.definition_image), cards))
-        term_images, definition_images = zip(*images)
-        for file in listdir(settings.MEDIA_ROOT):
-            pass
+        if file:
+            name, ext = file.name.split('.')
+            unique_id = ''.join(choice(ascii_letters + digits) for _ in range(unique_id_length))
+            name = '_'.join([name, unique_id])
+            file.name = '.'.join([name, ext])
+
+        return file

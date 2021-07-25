@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db.models import *
 
 # Create your models here.
@@ -25,6 +26,6 @@ class Deck(Model):
 class Card(Model):
     deck = ForeignKey(Deck, on_delete=CASCADE)
     term = CharField(max_length=LENGTH)
-    term_image = FileField(upload_to='static/media/', null=True, blank=True)
+    term_image = FileField(upload_to=settings.MEDIA_ROOT, null=True, blank=True)
     definition = CharField(max_length=LENGTH)
-    definition_image = FileField(upload_to='static/media', null=True, blank=True)
+    definition_image = FileField(upload_to=settings.MEDIA_ROOT, null=True, blank=True)

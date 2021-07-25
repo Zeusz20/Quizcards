@@ -32,20 +32,19 @@ MESSAGE_TAGS = {
 }
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '192.168.1.16',
 ]
 
 # Application definition
 
 INSTALLED_APPS = [
+    'main.apps.MainConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main.apps.MainConfig',
+    'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +55,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+CRONJOBS = [
+    # run every friday at 17:00
+    ('* 17 * * FRI', ''),
 ]
 
 ROOT_URLCONF = 'quizcards.urls'
@@ -123,14 +127,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
+MEDIA_ROOT = path.join(BASE_DIR, 'static', 'media')
+
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    path.join(BASE_DIR, 'static')
+    path.join(BASE_DIR, 'static'),
+    MEDIA_ROOT,
 ]
-
-MEDIA_ROOT = path.join(BASE_DIR, 'static', 'media')
-MEDIA_URL = '/media/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field

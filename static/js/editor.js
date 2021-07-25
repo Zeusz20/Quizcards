@@ -146,12 +146,12 @@ function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
     let imagePreviews = Array.from(document.getElementsByName(previewName))
     let deleteBtns = Array.from(document.getElementsByName(deleteBtnName))
 
-    const imageFormattingControls = imagePreviews.map((item, index) => {
+    const imageFormattingControls = imagePreviews.map((preview, index) => {
         // zip file upload, image preview nodes and image delete buttons
         return {
             'input': imageInputs[index],
             'controls': {
-                'preview': item,
+                'preview': preview,
                 'delete': deleteBtns[index]
             }
         }
@@ -233,12 +233,12 @@ function getImage(node, type) {
     // check input tag in case a new image has been uploaded
     let image = Array.from(node.getElementsByTagName('input')).filter(input => input.getAttribute('name') == inputName)[0]
     if(image.value !== '') {
-        return getFileName(image.value)
+        return getFilename(image.value)
     }
 
     // check preview img tag in case of preloaded images (used when editing an existing deck)
     image = Array.from(node.getElementsByTagName('img')).filter(img => img.getAttribute('name') == previewName)[0]
-    return getFileName(image.getAttribute('src'))
+    return getFilename(image.getAttribute('src'))
 }
 
 function load(deck, cards) {
@@ -269,7 +269,8 @@ function load(deck, cards) {
 }
 
 function loadImage(src) {
-    return (src === '') ? src : window.location.origin + '/' + src
+    const MEDIA_ROOT = '/static/media/'
+    return (src === '') ? src : window.location.origin + MEDIA_ROOT + getFilename(src)
 }
 
 /** Adds an update input tag so the server can resolve the POST accordingly */
@@ -291,11 +292,11 @@ function assignIds() {
     }
 }
 
-function getFileName(path) {
+function getFilename(path) {
     let startIndex = (path.indexOf('\\') >= 0 ? path.lastIndexOf('\\') : path.lastIndexOf('/'))
-    let name = path.substring(startIndex)
-    if(name.indexOf('\\') === 0 || name.indexOf('/') === 0) {
-        name = name.substring(1)
+    let filename = path.substring(startIndex)
+    if(filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+        filename = filename.substring(1)
     }
-    return name
+    return filename
 }
