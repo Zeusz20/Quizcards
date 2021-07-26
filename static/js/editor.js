@@ -270,7 +270,7 @@ function load(deck, cards) {
 
 function loadImage(src) {
     const MEDIA_ROOT = '/static/media/'
-    return (src === '') ? src : window.location.origin + MEDIA_ROOT + getFilename(src)
+    return (src === '') ? src : window.location.origin + MEDIA_ROOT + src
 }
 
 /** Adds an update input tag so the server can resolve the POST accordingly */

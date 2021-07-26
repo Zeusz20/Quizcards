@@ -69,11 +69,12 @@ class UserView(View):
 
     def _get_user_data(self, user_id):
         user = User.objects.get(pk=user_id)
+        decks = Deck.objects.filter(user=user)
 
         return {
             'username': user.username,
             'date_created': user.date_created,
-            'decks': utils.serialize_model(Deck, user=user),
+            'decks': utils.serialize(decks),
             'template': self.dynamic_template,
         }
 
@@ -108,7 +109,7 @@ class EditorView(View):
         update = request.POST.get('update')
         data = json.loads(request.POST['deck'])
 
-        if update is not None:
+        if update:
             self._update_deck(request, data)
             return redirect('/user')
         else:
@@ -117,19 +118,17 @@ class EditorView(View):
 
     def _create_deck(self):
         return {
-            'num_of_cards': list(range(1)),
+            'cards': [dict()],  # empty card list with dummy card
             'template': self.dynamic_template
         }
 
     def _load_deck(self, request):
-        uuid = request.GET['uuid']
         deck = Deck.objects.get(uuid=request.GET['uuid'])
-        cards = list(Card.objects.filter(deck=deck))
+        cards = Card.objects.filter(deck=deck)
 
         return {
-            'deck': utils.serialize_model(Deck, uuid=uuid)[0],
-            'cards': utils.serialize_model(Card, deck=deck),
-            'num_of_cards': range(len(cards)),
+            'deck': utils.serialize(deck),
+            'cards': utils.serialize(cards),
             'template': self.dynamic_template,
         }
 
