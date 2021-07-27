@@ -8,14 +8,17 @@ from . import authentication as auth, cleaner, utils
 from .models import *
 
 
-# Create your views here.
-
-
 class IndexView(View):
     template_name = 'main/index.html'
 
     def get(self, request):
-        utils.delete_past_session(request)
+        print(request.GET)
+
+        if request.GET.get('logout') == '':
+            utils.delete_past_session(request)
+
+        if utils.user_exists(request):
+            return redirect('/user')
 
         if request.GET.get('view') is None:
             return redirect('/?view=login')

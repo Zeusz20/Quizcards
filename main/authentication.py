@@ -5,7 +5,7 @@ from django.contrib.auth import password_validation as pv
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from datetime import date
 from hashlib import sha256
-from . import models, utils
+from .models import User
 
 
 def hash_password(password):
@@ -16,7 +16,7 @@ def validate_login(request):
     login_username = request.POST['username']
     login_password = hash_password(request.POST['password'])
 
-    if not models.User.objects.filter(username=login_username, password=login_password).exists():
+    if not User.objects.filter(username=login_username, password=login_password).exists():
         messages.error(request, 'Wrong username or password.')
         return False
     return True
@@ -34,7 +34,7 @@ def validate_registration(request):
 
     if valid_username and valid_email and valid_password:
         # create new user
-        models.User(
+        User(
             username=new_username,
             email=new_email,
             password=hash_password(password1),
@@ -51,7 +51,7 @@ def change_password(request):
     password1 = request.POST['password1']
     password2 = request.POST['password2']
 
-    if not models.User.objects.filter(pk=user_id, password=hash_password(old_password)).exists():
+    if not User.objects.filter(pk=user_id, password=hash_password(old_password)).exists():
         messages.error(request, 'Wrong password.')
         return False
 
@@ -60,7 +60,7 @@ def change_password(request):
         return False
 
     if _validate_password(password1, password2, request):
-        models.User.objects.filter(pk=user_id).update(password=hash_password(password1))
+        User.objects.filter(pk=user_id).update(password=hash_password(password1))
         return True
 
 
@@ -76,7 +76,7 @@ def _validate_username(username, request):
         messages.error(request, 'Username must be at least 4 characters.')
         return False
 
-    if models.User.objects.filter(username=username).exists():
+    if User.objects.filter(username=username).exists():
         messages.error(request, 'Username already in use.')
         return False
 
@@ -84,7 +84,7 @@ def _validate_username(username, request):
 
 
 def _validate_email(email, request):
-    if models.User.objects.filter(email=email).exists():
+    if User.objects.filter(email=email).exists():
         messages.error(request, 'E-mail already registered.')
         return False
     return True
