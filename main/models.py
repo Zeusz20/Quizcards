@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db.models import *
 
+# Create your models here.
+
 LENGTH = 512
 
 

@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.views.generic import View
 from datetime import date
-from . import authentication as auth, utils
+from . import authentication as auth, cleaner, utils
 from .models import *
 
 
@@ -171,9 +171,10 @@ class EditorView(View):
             ).save()
 
     def _update_deck(self, request, data):
-        data['last_modified'] = data.today()
         deck = Deck.objects.get(uuid=data['uuid'])
-        self._update(deck, data, 'name', 'description', 'last_modified')
+        self._update(deck, data, 'name', 'description')
+        deck.last_modified = date.today()
+        deck.save()
         self._update_cards(request, deck, data)
 
     def _update_cards(self, request, deck, data):
@@ -186,6 +187,7 @@ class EditorView(View):
                 new = new.pop()
                 self._update(card, new, 'term', 'definition')
                 self._update_images(request, card, new)
+                cleaner.schedule_cleanup()  # clean up orphaned files
             except IndexError:
                 # card is not present in POST because it was deleted
                 card.delete()
