@@ -40,3 +40,14 @@ def serialize(query):
             card['fields']['definition_image'] = path.basename(card['fields']['definition_image'])
 
     return serialized if is_iterable else serialized.pop()
+
+
+def validate_datetime(day, hour, minute):
+    if not 1 <= day <= 7:
+        raise ValueError(day)
+
+    if not 0 <= hour <= 23:
+        raise ValueError(hour)
+
+    if not 0 <= minute <= 59:
+        raise ValueError(minute)

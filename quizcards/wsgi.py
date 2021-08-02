@@ -17,4 +17,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'quizcards.settings')
 application = get_wsgi_application()
 
 # run file cleanup every FRI at 17:00
-cleaner.start_cleanup_thread(5, 17, 00)
+cleaner.start_cleanup_thread(5, 17, 0)

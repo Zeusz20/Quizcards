@@ -3,6 +3,7 @@ import threading
 
 from django.conf import settings
 from .models import Card
+from .utils import validate_datetime
 
 CLEANUP_THREAD_NAME = 'FileCleanupThread'
 
@@ -21,13 +22,8 @@ def file_cleanup():
 
 
 def start_cleanup_thread(day, hour, minute):
-    # validate datetime parameters
-    if not 1 <= day <= 7:
-        raise ValueError(day)
-    if not 0 <= hour <= 23:
-        raise ValueError(hour)
-    if not 0 <= minute <= 59:
-        raise ValueError(minute)
+    # raises ValueError if datetime is invalid
+    validate_datetime(day, hour, minute)
 
     def task():
         from datetime import datetime
@@ -50,4 +46,3 @@ def start_cleanup_thread(day, hour, minute):
     if CLEANUP_THREAD_NAME not in threads:
         cleanup_thread = threading.Thread(target=task, name=CLEANUP_THREAD_NAME)
         cleanup_thread.start()
-        cleanup_thread.join()

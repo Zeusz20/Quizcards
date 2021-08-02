@@ -12,7 +12,6 @@ class IndexView(View):
     template_name = 'main/index.html'
 
     def get(self, request):
-        print(request.GET)
 
         if request.GET.get('logout') == '':
             utils.delete_past_session(request)
@@ -121,7 +120,7 @@ class EditorView(View):
 
     def _create_deck(self):
         return {
-            'cards': [dict()],  # empty card list with dummy card
+            'cards': [{}],  # empty card list with dummy card
             'template': self.dynamic_template
         }
 
@@ -187,7 +186,6 @@ class EditorView(View):
                 new = new.pop()
                 self._update(card, new, 'term', 'definition')
                 self._update_images(request, card, new)
-                cleaner.schedule_cleanup()  # clean up orphaned files
             except IndexError:
                 # card is not present in POST because it was deleted
                 card.delete()
