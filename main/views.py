@@ -1,10 +1,10 @@
 import json
 
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import View
 from datetime import date
-from . import authentication as auth, cleaner, utils
+from . import authentication as auth, utils
 from .models import *
 
 
@@ -24,7 +24,7 @@ class IndexView(View):
 
         context = {
             'form': request.GET['view'],
-            'index': True,  # this changes the header depending on if the user is authenticated
+            'user': False,  # this changes the header depending on if the user is authenticated
         }
 
         return render(request, self.template_name, context)
@@ -32,7 +32,7 @@ class IndexView(View):
     def post(self, request):
         if request.GET['view'] == 'register':
             self._handle_registration(request)
-            return redirect('/?view=login')
+            return redirect('/')
         else:
             self._handle_login(request)
             return redirect('/user')
@@ -49,11 +49,11 @@ class IndexView(View):
 
 class UserView(View):
     template_name = 'main/user.html'
-    dynamic_template = utils.load_view_template('main/deck_view_template.html')
+    dynamic_template = utils.load_view_template('main/deck_view.html')
 
     def get(self, request):
         if not utils.user_exists(request):
-            return redirect('/?view=login')
+            return redirect('/')
 
         user_id = request.session.get('user_id')
         User.objects.filter(pk=user_id).update(last_login=date.today())
@@ -94,29 +94,29 @@ class UserView(View):
 
 class EditorView(View):
     template_name = 'main/editor.html'
-    dynamic_template = utils.load_view_template('main/card_view_template.html')
+    dynamic_template = utils.load_view_template('main/base_card_view.html')
 
     def get(self, request):
         if not utils.user_exists(request):
-            return redirect('/?view=login')
+            return redirect('/')
 
-        if request.GET.get('uuid') is not None:
+        if request.GET.get('uuid'):
             context = self._load_deck(request)
-            return render(request, self.template_name, context)
         else:
             context = self._create_deck()
-            return render(request, self.template_name, context)
+
+        return render(request, self.template_name, context)
 
     def post(self, request):
-        update = request.POST.get('update')
+        update = request.POST.get('uuid') != ''
         data = json.loads(request.POST['deck'])
 
         if update:
             self._update_deck(request, data)
-            return redirect('/user')
         else:
             self._save_deck(request, data)
-            return redirect('/user')
+
+        return redirect('/user')
 
     def _create_deck(self):
         return {
@@ -125,11 +125,13 @@ class EditorView(View):
         }
 
     def _load_deck(self, request):
-        deck = Deck.objects.get(uuid=request.GET['uuid'])
+        user = User.objects.get(pk=request.session['user_id'])
+        deck = get_object_or_404(Deck, user=user, uuid=request.GET['uuid'])     # check if user owns the deck
         cards = Card.objects.filter(deck=deck)
 
         return {
             'deck': utils.serialize(deck),
+            'card_ids': list(map(lambda card: card.pk, cards)),
             'cards': utils.serialize(cards),
             'template': self.dynamic_template,
         }
@@ -241,7 +243,7 @@ class EditorView(View):
         if file:
             name, ext = file.name.split('.')
             unique_id = ''.join(choice(ascii_letters + digits) for _ in range(unique_id_length))
-            name = '_'.join([name, unique_id])
-            file.name = '.'.join([name, ext])
+            name = name + '_' + unique_id
+            file.name = name + '.' + ext
 
         return file

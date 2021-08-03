@@ -1,12 +1,12 @@
-<nav class="navbar" style="justify-content: space-evenly; position: sticky;">
+<nav class="navbar zeusz-nav">
     <h3>Quizcards</h3>
-    {% if index %}
-        <a href="/?view=login">Log In</a>
-        <a href="/?view=register">Register</a>
-    {% else %}
+    {% if user %}
         <a href="/user">Home</a>
         <a href="/user?view=manage">Profile</a>
         <a href="/?logout=">Log out</a>
+    {% else %}
+        <a href="/?view=login">Log In</a>
+        <a href="/?view=register">Register</a>
     {% endif %}
 
     <form method="get" class="col-md-2">

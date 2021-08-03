@@ -9,11 +9,19 @@
             <!-- Edit deck details -->
             Deck name:
             <div class="input-group mb-3">
-                <input type="text" id="name" placeholder="Enter a title." required class="form-control">
+                {% if request.GET.uuid %}
+                    <input type="text" id="name" placeholder="Enter a title." value="{{ deck.fields.name }}" required class="form-control">
+                {% else %}
+                    <input type="text" id="name" placeholder="Enter a title." required class="form-control">
+                {% endif %}
             </div>
             Description:
             <div class="input-group mb-3">
-                <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
+                {% if request.GET.uuid %}
+                    <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control">{{ deck.fields.description }}</textarea>
+                {% else %}
+                    <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
+                {% endif %}
             </div>
             <div class="text-center">
                 <button id='save-btn' type="button" disabled class="btn btn-success">Save</button>
@@ -24,7 +32,7 @@
             <!-- Edit cards -->
             <div id="container" class="container">
                 {% for card in cards %}
-                    {% include "main/card_view_template.html" %}
+                    {% include "main/card_view.html" %}
                 {% endfor %}
             </div>
             <button id='new-card' type="button" class="btn btn-secondary col-12 mb-3">+ Add new card +</button>
@@ -34,10 +42,11 @@
 
 {% block script %}
     <script>
-        const rawDeck = '{{ deck }}'.replace(/&#x27;/g, '"')
-        const rawCards = '{{ cards }}'.replace(/&#x27;/g, '"').replace(/&quot;/g, '\'').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        const CARD_IDS = '{{ card_ids }}' !== '' ? JSON.parse('{{ card_ids }}') : '{{ card_ids }}'
         const cardTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.5.6/tinymce.min.js"></script>
 
     {% load static %}
     <script src="{% static 'js/editor.js' %}"></script>

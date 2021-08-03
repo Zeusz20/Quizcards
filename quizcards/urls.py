@@ -19,7 +19,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('main.urls'))
+    path('', include('main.urls')),
+    path('tinymce/', include('tinymce.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

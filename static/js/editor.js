@@ -1,20 +1,20 @@
-// ask the user before leaving
 var warn = true
+var activeEditors = []
 
-// start editor
 init()
 
 
 function init() {
     window.onload = warnUser
 
-    if(rawDeck !== '' && rawCards !== '') {
-        const deck = JSON.parse(rawDeck)
-        const cards = JSON.parse(rawCards)
-        load(deck, cards)
+    if(document.getElementById('uuid').value !== '') {
+        load()
     }
 
-    updateButtons()
+    initTinyMCE()
+    updateSaveButton()
+    updateEditButtons()
+    document.getElementById('new-card').onclick = addNewCard
 }
 
 function warnUser() {
@@ -28,6 +28,28 @@ function warnUser() {
     })
 }
 
+function initTinyMCE() {
+    const termEditor = tinymce.init(getTinyMCEConfig('term'))
+    const definitionEditor = tinymce.init(getTinyMCEConfig('definition'))
+
+    termEditor.then((result) => {
+        activeEditors.push(result[0].id)
+    })
+
+    definitionEditor.then((result) => {
+        activeEditors.push(result[0].id)
+    })
+}
+
+function getTinyMCEConfig(type) {
+    return {
+        selector: `div[name="${type}"]`,
+        menubar: false,
+        plugins: 'textcolor',
+        toolbar: 'undo redo | bold italic underline | forecolor backcolor',
+        statusbar: false,
+    }
+}
 
 /* DECK EDITING */
 
@@ -36,18 +58,15 @@ function addNewCard() {
     template.innerHTML = cardTemplate.trim()
     
     document.getElementById('container').appendChild(template.content.firstChild)
-    updateButtons()
+    
+    initTinyMCE()
+    updateEditButtons()
 }
 
-function updateButtons() {
-    updateSaveButton()
+function updateEditButtons() {
     updateDeleteButtons()
-    updateFormattingButtons()
-    updateColorPickers()
     updateImageButtons('term')
     updateImageButtons('definition')
-
-    document.getElementById('new-card').onclick = addNewCard
 }
 
 function updateSaveButton() {
@@ -65,48 +84,32 @@ function updateSaveButton() {
 function updateDeleteButtons() {
     document.getElementsByName('delete-btn').forEach(btn => {
         btn.onclick = () => {
-            const card = btn.parentElement
-            btn.parentElement.parentElement.removeChild(card)
+            let cards = document.getElementsByName('card').length
+            if(cards !== 1) {
+                // deck must contain at least one card
+                const card = btn.parentElement
+                const editors = getEditors(card)
+                activeEditors = activeEditors.filter(editor => !editors.includes(editor))
+                btn.parentElement.parentElement.removeChild(card)
+            }
         }
     })
 }
 
-function updateFormattingButtons() {
-    document.getElementsByName('tool').forEach(tool => {
-        tool.addEventListener('click', () => {
-            document.execCommand(tool.dataset['command'], false, null)            
-            getEditor(tool).focus()
-        })
+function getEditors(parent, acc=[]) {
+    parent.childNodes.forEach(child => {
+        if(child.nodeType == Node.ELEMENT_NODE) {
+            let name = child.getAttribute('name')
+            if(name == 'term' || name == 'definition') {
+                acc.push(child)
+            }
+            else {
+                getEditors(child, acc)
+            }
+        }
     })
-}
-
-function updateColorPickers() {
-    document.getElementsByName('picker').forEach(picker => {
-        picker.addEventListener('change', () => {
-            document.execCommand('styleWithCSS', false,  true)
-            document.execCommand('foreColor', false, picker.value)
-            getEditor(picker).focus()
-        })
-    })
-}
-
-function getEditor(child) {
-    const getSiblings = (node) => {
-        return Array.from(node.parentElement.childNodes)
-            .filter(element => element.nodeType === Node.ELEMENT_NODE)  // filter out text nodes
-    }
-
-    const getEditor = (node) => {
-        let siblings = getSiblings(node)
-        let editors = siblings.filter(element => {
-            let name = element.getAttribute('name')
-            return name == 'term' || name == 'definition'
-        })
-
-        return (editors.length != 0) ? editors[0] : getEditor(node.parentElement)
-    }
     
-    return getEditor(child)
+    return acc.map(editor => editor.id)
 }
 
 function updateImageButtons(type) {
@@ -173,13 +176,14 @@ function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
 function save() {
     warn = false
 
-    // disable color pickers so they are not sent with POST
-    Array.from(document.getElementsByTagName('input'))
-        .filter(element => element.getAttribute('type') == 'color')
-        .forEach(input => input.removeAttribute('name'))
-
     // are we editing an existing deck?
-    let update = (document.getElementsByName('update').length !== 0)
+    // checks for an update input flag
+    let update = (document.getElementById('uuid').value !== '')
+
+    activeEditors.forEach(id => {
+        const editor = tinymce.get(id)
+        editor.save()
+    })
 
     // initialize deck data
     const deck = document.createElement('input')
@@ -241,54 +245,14 @@ function getImage(node, type) {
     return getFilename(image.getAttribute('src'))
 }
 
-function load(deck, cards) {
+function load() {
     document.getElementById('save-btn').disabled = false
-
-    // fill in deck data
-    document.getElementById('name').value = deck.fields.name
-    document.getElementById('description').value = deck.fields.description
-
-    // fill in cards data
-    let terms = Array.from(document.getElementsByName('term'))
-    let definitions = Array.from(document.getElementsByName('definition'))
-
-    // fill in image data
-    let term_previews = Array.from(document.getElementsByName('term-preview'))
-    let definition_previews = Array.from(document.getElementsByName('definition-preview'))
-
-    for(let i = 0; i < terms.length; i++) {
-        terms[i].innerHTML = cards[i].fields.term
-        term_previews[i].src = loadImage(cards[i].fields.term_image)
     
-        definitions[i].innerHTML = cards[i].fields.definition
-        definition_previews[i].src = loadImage(cards[i].fields.definition_image)
-    }
+    // assigns ids to the cards from the database
+    const cards = document.getElementsByName('card')
 
-    addUpdateFlag()
-    assignIds()
-}
-
-function loadImage(src) {
-    const MEDIA_ROOT = '/static/media/'
-    return (src === '') ? src : window.location.origin + MEDIA_ROOT + src
-}
-
-/** Adds an update input tag so the server can resolve the POST accordingly */
-function addUpdateFlag() {
-    const input = document.createElement('input')
-    input.setAttribute('type', 'hidden')
-    input.setAttribute('name', 'update')
-    input.setAttribute('value', true)
-    document.getElementById('editor').appendChild(input)
-}
-
-/** Assigns ids to the cards from the database */
-function assignIds() {
-    const ids = JSON.parse(rawCards)
-    let cards = document.getElementsByName('card')
-    
     for(let i = 0; i < cards.length; i++) {
-        cards[i].setAttribute('id', ids[i].pk)
+        cards[i].setAttribute('id', CARD_IDS[i])
     }
 }
 

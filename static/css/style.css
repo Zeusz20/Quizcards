@@ -1,0 +1,17 @@
+.zeusz-nav {
+    justify-content: space-evenly; 
+    position: sticky;
+}
+
+.zeusz-card {
+    outline: 1px solid lightgray; 
+    border-radius: 5px;
+}
+
+.zeusz-img {
+    display: block; 
+    max-width: 64px; 
+    max-height: 64px; 
+    width: auto; 
+    height: auto;
+}
