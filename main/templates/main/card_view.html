@@ -1,57 +1,33 @@
 <div name="card" class="row my-5 zeusz-card">
     <div class="col">
         <h6>Term</h6>
+
         {% if request.GET.uuid %}
-            <div name="term">
-                {% autoescape off %}
-                    {{ card.fields.term }}
-                {% endautoescape %}
-            </div>
+            <div name="term">{% autoescape off %} {{ card.fields.term }} {% endautoescape %}</div>
             {% if card.fields.term_image %}
-                <input type="file" name="term-image" accept="image/png, image/jpeg" class="mb-2">
-                {% with term_image=card.fields.term_image %}
-                    {% load static %}
-                    <img name="term-preview" src="{% static term_image %}" alt="" loading="lazy" class="zeusz-img">
-                {% endwith %}
-                <button type="button" name="del-term-img" style="width: 2em" class="btn-danger">X</button>
+                {% include 'main/image_uploader.html' with type='term' image=card.fields.term_image %}
             {% else %}
-                <input type="file" name="term-image" accept="image/png, image/jpeg" class="mb-2">
-                <img name="term-preview" src="" alt="" loading="lazy" class="zeusz-img">
-                <button type="button" name="del-term-img" style="width: 2em" class="btn-danger">X</button>
+                {% include 'main/image_uploader.html' with type='term' %}
             {% endif %}
         {% else %}
             <div name="term"></div>
-            <input type="file" name="term-image" accept="image/png, image/jpeg" class="mb-2">
-            <img name="term-preview" src="" alt="" loading="lazy" class="zeusz-img">
-            <button type="button" name="del-term-img" style="width: 2em" class="btn-danger">X</button>
+            {% include 'main/image_uploader.html' with type='term' %}
         {% endif %}
     </div>
 
     <div class="col">
         <h6>Definition</h6>
+
         {% if request.GET.uuid %}
-            <div name="definition">
-                {% autoescape off %}
-                    {{ card.fields.definition }}
-                {% endautoescape %}
-            </div>
+            <div name="definition">{% autoescape off %} {{ card.fields.definition }} {% endautoescape %}</div>
             {% if card.fields.definition_image %}
-                <input type="file" name="definition-image" accept="image/png, image/jpeg" class="mb-2">
-                {% with definition_image=card.fields.definition_image %}
-                    {% load static %}
-                    <img name="definition-preview" src="{% static definition_image %}" alt="" loading="lazy" class="zeusz-img">
-                {% endwith %}
-                <button type="button" name="del-definition-img" style="width: 2em" class="btn-danger">X</button>
+                {% include 'main/image_uploader.html' with type='definition' image=card.fields.definition_image %}
             {% else %}
-                <input type="file" name="definition-image" accept="image/png, image/jpeg" class="mb-2">
-                <img name="definition-preview" src="" alt="" loading="lazy" class="zeusz-img">
-                <button type="button" name="del-definition-img" style="width: 2em" class="btn-danger">X</button>
+                {% include 'main/image_uploader.html' with type='definition' %}
             {% endif %}
         {% else %}
             <div name="definition"></div>
-            <input type="file" name="definition-image" accept="image/png, image/jpeg" class="mb-2">
-            <img name="definition-preview" src="" alt="" loading="lazy" class="zeusz-img">
-            <button type="button" name="del-definition-img" style="width: 2em" class="btn-danger">X</button>
+            {% include 'main/image_uploader.html' with type='definition' %}
         {% endif %}
     </div>
 

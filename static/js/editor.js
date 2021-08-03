@@ -174,26 +174,37 @@ function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
 /* SAVE AND LOAD */
 
 function save() {
-    warn = false
+    if(canSave()) {
+        warn = false
 
-    // are we editing an existing deck?
-    // checks for an update input flag
-    let update = (document.getElementById('uuid').value !== '')
+        // checks for an update input flag (are we editing an existing deck)
+        let update = (document.getElementById('uuid').value !== '')
 
-    activeEditors.forEach(id => {
-        const editor = tinymce.get(id)
-        editor.save()
-    })
+        activeEditors.forEach(id => {
+            const editor = tinymce.get(id)
+            editor.save()
+        })
 
-    // initialize deck data
-    const deck = document.createElement('input')
-    deck.setAttribute('type', 'hidden')
-    deck.setAttribute('name', 'deck')
-    deck.setAttribute('value', getDeckJson(update))
-    
-    const form = document.getElementById('editor')
-    form.appendChild(deck)
-    form.submit()
+        // initialize deck data
+        const deck = document.createElement('input')
+        deck.setAttribute('type', 'hidden')
+        deck.setAttribute('name', 'deck')
+        deck.setAttribute('value', getDeckJson(update))
+        
+        const form = document.getElementById('editor')
+        form.appendChild(deck)
+        form.submit()
+    }
+    else {
+        alert('A deck must have a name and must contain at least 2 cards!')
+        warn = true
+    }
+}
+
+function canSave() {
+    const name = document.getElementById('name').value
+    const cards = document.getElementsByName('card').length
+    return (name !== '' && cards >= 2)
 }
 
 /** @param {boolean} addPrimaryKey - used when editing an existing deck */

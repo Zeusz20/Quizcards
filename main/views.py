@@ -247,3 +247,20 @@ class EditorView(View):
             file.name = name + '.' + ext
 
         return file
+
+
+def foo(uuid, image):
+    if uuid:
+        p('div', 'html')
+        if image:
+            p('image', 'img')
+        else:
+            p('image')
+    else:
+        p('div')
+        p('image')
+
+
+def p(*args):
+    for arg in args:
+        print(arg)
