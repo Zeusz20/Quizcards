@@ -1,5 +1,4 @@
 var warn = true
-var activeEditors = []
 
 init()
 
@@ -7,13 +6,9 @@ init()
 function init() {
     window.onload = warnUser
 
-    if(document.getElementById('uuid').value !== '') {
-        load()
-    }
-
     initTinyMCE()
-    updateSaveButton()
-    updateEditButtons()
+    updateEditorButtons()
+    document.getElementById('save-btn').onclick = save
     document.getElementById('new-card').onclick = addNewCard
 }
 
@@ -29,16 +24,8 @@ function warnUser() {
 }
 
 function initTinyMCE() {
-    const termEditor = tinymce.init(getTinyMCEConfig('term'))
-    const definitionEditor = tinymce.init(getTinyMCEConfig('definition'))
-
-    termEditor.then((result) => {
-        activeEditors.push(result[0].id)
-    })
-
-    definitionEditor.then((result) => {
-        activeEditors.push(result[0].id)
-    })
+    tinymce.init(getTinyMCEConfig('term'))
+    tinymce.init(getTinyMCEConfig('definition'))
 }
 
 function getTinyMCEConfig(type) {
@@ -60,25 +47,13 @@ function addNewCard() {
     document.getElementById('container').appendChild(template.content.firstChild)
     
     initTinyMCE()
-    updateEditButtons()
+    updateEditorButtons()
 }
 
-function updateEditButtons() {
+function updateEditorButtons() {
     updateDeleteButtons()
     updateImageButtons('term')
     updateImageButtons('definition')
-}
-
-function updateSaveButton() {
-    // cannot save until user typed in deck's name
-    const deckName = document.getElementById('name')
-    const saveBtn = document.getElementById('save-btn')
-
-    deckName.addEventListener('keyup', () => {
-        saveBtn.disabled = (deckName.value === '')
-    })
-
-    saveBtn.onclick = save
 }
 
 function updateDeleteButtons() {
@@ -87,13 +62,21 @@ function updateDeleteButtons() {
             let cards = document.getElementsByName('card').length
             if(cards !== 1) {
                 // deck must contain at least one card
-                const card = btn.parentElement
+                const card = getCard(btn)
                 const editors = getEditors(card)
                 activeEditors = activeEditors.filter(editor => !editors.includes(editor))
                 btn.parentElement.parentElement.removeChild(card)
             }
         }
     })
+}
+
+function getCard(child) {
+    if(child.parentElement.getAttribute('name') == 'card') {
+        return child.parentElement
+    }
+    
+    return getCard(child.parentElement)
 }
 
 function getEditors(parent, acc=[]) {
@@ -117,7 +100,7 @@ function updateImageButtons(type) {
     const previewName = type + '-preview'
     const deleteBtnName = 'del-' + type + '-img'
 
-    hideAndShowImageControls(imageName, previewName, deleteBtnName)
+    hideOrShowImageControls(imageName, previewName, deleteBtnName)
 
     // image upload
     document.getElementsByName(imageName).forEach(input => {
@@ -127,7 +110,7 @@ function updateImageButtons(type) {
                 const img = Array.from(input.parentElement.childNodes).filter(element => element.name == previewName)[0]
                 img.src = URL.createObjectURL(input.files[0])
             }
-            hideAndShowImageControls(imageName, previewName, deleteBtnName)
+            hideOrShowImageControls(imageName, previewName, deleteBtnName)
         }
     })
 
@@ -139,12 +122,12 @@ function updateImageButtons(type) {
             const preview = Array.from(btn.parentElement.childNodes).filter(element => element.name == previewName)[0]
             file.value = ''
             preview.src = ''
-            hideAndShowImageControls(imageName, previewName, deleteBtnName)
+            hideOrShowImageControls(imageName, previewName, deleteBtnName)
         }
     })
 }
 
-function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
+function hideOrShowImageControls(imageName, previewName, deleteBtnName) {
     let imageInputs = Array.from(document.getElementsByName(imageName))
     let imagePreviews = Array.from(document.getElementsByName(previewName))
     let deleteBtns = Array.from(document.getElementsByName(deleteBtnName))
@@ -171,19 +154,14 @@ function hideAndShowImageControls(imageName, previewName, deleteBtnName) {
 }
 
 
-/* SAVE AND LOAD */
+/* SAVE */
 
 function save() {
     if(canSave()) {
         warn = false
 
-        // checks for an update input flag (are we editing an existing deck)
+        // checks for an update flag (are we editing an existing deck)
         let update = (document.getElementById('uuid').value !== '')
-
-        activeEditors.forEach(id => {
-            const editor = tinymce.get(id)
-            editor.save()
-        })
 
         // initialize deck data
         const deck = document.createElement('input')
@@ -215,6 +193,9 @@ function getDeckJson(addPrimaryKey) {
         'uuid': document.getElementById('uuid').value,
         'cards': []
     }
+
+    // save contents to selector
+    tinymce.triggerSave()
 
     document.getElementsByName('card').forEach(element => {
         const card = {
@@ -254,17 +235,6 @@ function getImage(node, type) {
     // check preview img tag in case of preloaded images (used when editing an existing deck)
     image = Array.from(node.getElementsByTagName('img')).filter(img => img.getAttribute('name') == previewName)[0]
     return getFilename(image.getAttribute('src'))
-}
-
-function load() {
-    document.getElementById('save-btn').disabled = false
-    
-    // assigns ids to the cards from the database
-    const cards = document.getElementsByName('card')
-
-    for(let i = 0; i < cards.length; i++) {
-        cards[i].setAttribute('id', CARD_IDS[i])
-    }
 }
 
 function getFilename(path) {

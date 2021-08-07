@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import View
 from datetime import date
-from . import authentication as auth, utils
+from . import authentication as auth, paging, utils
 from .models import *
 
 
@@ -24,7 +24,6 @@ class IndexView(View):
 
         context = {
             'form': request.GET['view'],
-            'user': False,  # this changes the header depending on if the user is authenticated
         }
 
         return render(request, self.template_name, context)
@@ -55,10 +54,32 @@ class UserView(View):
         if not utils.user_exists(request):
             return redirect('/')
 
-        user_id = request.session.get('user_id')
-        User.objects.filter(pk=user_id).update(last_login=date.today())
+        user = User.objects.get(pk=request.session['user_id'])
+        context = self._get_user_data(user)
 
-        context = self._get_user_data(user_id)
+        if not list(request.GET):
+            # GET is empty, user has freshly logged in
+            user.last_login = date.today()
+            user.save()
+            return redirect('/user?page=1')
+
+        if request.GET.get('query'):
+            # user searched for a deck locally
+            page_manager = paging.get_search_page_manager(user, request.GET['query'], True)
+            context.update({
+                'page': page_manager.page(request.GET['page']),
+            })
+            return render(request, self.template_name, context)
+
+        if request.GET.get('page'):
+            # no query, display user's decks
+            page_manager = paging.get_deck_page_manager(user)
+            context.update({
+                'page': page_manager.page(request.GET['page']),
+            })
+            return render(request, self.template_name, context)
+
+        # user's manage page
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -69,15 +90,10 @@ class UserView(View):
             self._handle_password_change(request)
             return redirect('/user')
 
-    def _get_user_data(self, user_id):
-        user = User.objects.get(pk=user_id)
-        decks = Deck.objects.filter(user=user)
-
+    def _get_user_data(self, user):
         return {
             'username': user.username,
             'date_created': user.date_created,
-            'decks': utils.serialize(decks),
-            'template': self.dynamic_template,
         }
 
     def _handle_delete(self, request):
@@ -108,8 +124,8 @@ class EditorView(View):
         return render(request, self.template_name, context)
 
     def post(self, request):
-        update = request.POST.get('uuid') != ''
         data = json.loads(request.POST['deck'])
+        update = data.get('uuid')
 
         if update:
             self._update_deck(request, data)
@@ -172,11 +188,12 @@ class EditorView(View):
             ).save()
 
     def _update_deck(self, request, data):
+        Deck.objects.filter(uuid=data['uuid']).update()
         deck = Deck.objects.get(uuid=data['uuid'])
-        self._update(deck, data, 'name', 'description')
-        deck.last_modified = date.today()
-        deck.save()
+        data['last_modified'] = date.today()
+        self._update(deck, data, 'name', 'description', 'last_modified')
         self._update_cards(request, deck, data)
+        messages.success(request, f'Deck "{deck.name}" updated successfully.')
 
     def _update_cards(self, request, deck, data):
         cards = Card.objects.filter(deck=deck)
@@ -249,18 +266,18 @@ class EditorView(View):
         return file
 
 
-def foo(uuid, image):
-    if uuid:
-        p('div', 'html')
-        if image:
-            p('image', 'img')
+class SearchView(View):
+    template_name = 'main/search.html'
+
+    def get(self, request):
+        if utils.user_exists(request):
+            user = User.objects.get(pk=request.session['user_id'])
+            page_manager = paging.get_search_page_manager(user, request.GET['query'], False)
         else:
-            p('image')
-    else:
-        p('div')
-        p('image')
+            page_manager = paging.SearchPageManager(None, request.GET['query'], False)
 
+        context = {
+            'page': page_manager.page(request.GET['page'])
+        }
 
-def p(*args):
-    for arg in args:
-        print(arg)
+        return render(request, self.template_name, context)

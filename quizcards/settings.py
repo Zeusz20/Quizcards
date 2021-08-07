@@ -32,6 +32,7 @@ MESSAGE_TAGS = {
 }
 
 ALLOWED_HOSTS = [
+    'localhost'
 ]
 
 # Application definition

@@ -24,21 +24,9 @@ def load_view_template(name):
 
 def serialize(query):
     is_iterable = hasattr(query, '__iter__')
-
-    if is_iterable:
-        raw = serializers.serialize('json', query)
-    else:
-        raw = serializers.serialize('json', [query])
-
+    queryset = query if is_iterable else [query]
+    raw = serializers.serialize('json', queryset)
     serialized = json.loads(raw)
-
-    # remap filenames of the respective image files,
-    # so the client does not receive the full path of the file
-    if serialized != [] and serialized[0]['model'] == 'main.card':
-        for card in serialized:
-            card['fields']['term_image'] = path.basename(card['fields']['term_image'])
-            card['fields']['definition_image'] = path.basename(card['fields']['definition_image'])
-
     return serialized if is_iterable else serialized.pop()
 
 

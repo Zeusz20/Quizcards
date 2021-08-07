@@ -1,4 +1,8 @@
+{% if request.GET.uuid %}
+<div id="{{ card.pk }}" name="card" class="row my-5 zeusz-card">
+{% else %}
 <div name="card" class="row my-5 zeusz-card">
+{% endif %}
     <div class="col">
         <h6>Term</h6>
 

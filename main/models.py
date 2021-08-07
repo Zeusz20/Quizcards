@@ -17,7 +17,7 @@ class User(Model):
 class Deck(Model):
     user = ForeignKey(User, on_delete=SET_NULL, null=True)
     name = CharField(max_length=LENGTH)
-    description = CharField(max_length=LENGTH, null=True)
+    description = CharField(max_length=LENGTH, null=True, default='')
     uuid = UUIDField()
     date_created = DateField()
     last_modified = DateField()

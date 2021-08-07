@@ -42,7 +42,6 @@
 
 {% block script %}
     <script>
-        const CARD_IDS = '{{ card_ids }}' !== '' ? JSON.parse('{{ card_ids }}') : '{{ card_ids }}'
         const cardTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
     </script>
 

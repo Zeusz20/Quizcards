@@ -1,27 +1,38 @@
 <div class="col-md-2">
-    <a href="/editor" class="input-group mb-2">Create a new deck</a>
-    <input type="text" id="local-deck-search" placeholder="Search decks" class="form-control">
+    <form method="get">
+        <div class="input-group">
+            <input type="text" name="query" placeholder="Search your decks" class="form-control mb-2">
+            <input type="hidden" name="page" value="1">
+            <div class="input-group-append">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <a href="/editor" class="btn btn-success mb-2">Create a new deck</a>
 </div>
 <br>
 
 <div id="holder">
     {% include "main/messages.html" %}
-    {% if not decks %}
-        <p class="text-muted">You have not created any decks yet.</p>
+    
+    {% if not page %}
+        <p class="text-muted">No decks :(</p>
+    {% else %}
+        {% for deck in page.object_list %}
+            {% include "main/deck_view.html" %}
+        {% endfor %}
+
+        <div id="paging" class="my-2">
+            {% if page.has_previous %}
+                <a href="/user?page={{ page.previous_page_number }}"><< Previous</a>
+            {% endif %}
+            {% if page.has_previous or page.has_next %}
+                |
+            {% endif %}
+            {% if page.has_next %}
+                <a href="/user?page={{ page.next_page_number }}">Next >></a>
+            {% endif %}
+        </div>
     {% endif %}
-
-    {% for deck in decks %}
-        {% include "main/deck_view.html" %}
-    {% endfor %}
 </div>
-
-{% block script %}
-    <!-- Handle search for user created decks/study sets -->
-    <script>
-        const raw = '{{ decks }}'.replace(/&#x27;/g, '"')
-        const data = JSON.parse(raw)
-        const deckTemplate = '{{ template }}'.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')      
-    </script>
-    {% load static %}
-    <script src="{% static 'js/local_deck_search.js' %}"></script>
-{% endblock script %}
