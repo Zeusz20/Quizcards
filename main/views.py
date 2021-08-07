@@ -65,21 +65,21 @@ class UserView(View):
 
         if request.GET.get('query'):
             # user searched for a deck locally
-            page_manager = paging.get_search_page_manager(user, request.GET['query'], True)
+            page_manager = paging.get_search_page_manager(user, request.GET)
             context.update({
-                'page': page_manager.page(request.GET['page']),
+                'page': page_manager.page(request.GET.get('page', 1)),
             })
             return render(request, self.template_name, context)
 
         if request.GET.get('page'):
-            # no query, display user's decks
+            # no query, display all of user's decks with pagination
             page_manager = paging.get_deck_page_manager(user)
             context.update({
                 'page': page_manager.page(request.GET['page']),
             })
             return render(request, self.template_name, context)
 
-        # user's manage page
+        # render user's manage page
         return render(request, self.template_name, context)
 
     def post(self, request):
@@ -95,6 +95,12 @@ class UserView(View):
             'username': user.username,
             'date_created': user.date_created,
         }
+
+    def _handle_deck_paging(self, request, user, context):
+        page_manager = paging.get_deck_page_manager(user)
+        context.update({
+            'page': page_manager.page(request.GET['page']),
+        })
 
     def _handle_delete(self, request):
         deck_id = request.POST['delete']
@@ -272,9 +278,9 @@ class SearchView(View):
     def get(self, request):
         if utils.user_exists(request):
             user = User.objects.get(pk=request.session['user_id'])
-            page_manager = paging.get_search_page_manager(user, request.GET['query'], False)
+            page_manager = paging.get_search_page_manager(user, request.GET)
         else:
-            page_manager = paging.SearchPageManager(None, request.GET['query'], False)
+            page_manager = paging.get_search_page_manager(None, request.GET)
 
         context = {
             'page': page_manager.page(request.GET['page'])

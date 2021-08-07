@@ -2,6 +2,7 @@
     <form method="get">
         <div class="input-group">
             <input type="text" name="query" placeholder="Search your decks" class="form-control mb-2">
+            <input type="hidden" name="local" value="true">
             <input type="hidden" name="page" value="1">
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary">Search</button>
@@ -17,7 +18,7 @@
     {% include "main/messages.html" %}
     
     {% if not page %}
-        <p class="text-muted">No decks :(</p>
+        <p class="text-muted">No decks.</p>
     {% else %}
         {% for deck in page.object_list %}
             {% include "main/deck_view.html" %}
