@@ -1,8 +1,8 @@
 <div class="col-md-2">
     <form method="get">
         <div class="input-group">
+            <input type="hidden" name="local" value="">
             <input type="text" name="query" placeholder="Search your decks" class="form-control mb-2">
-            <input type="hidden" name="local" value="true">
             <input type="hidden" name="page" value="1">
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary">Search</button>
@@ -14,7 +14,7 @@
 </div>
 <br>
 
-<div id="holder">
+<div class="mb-1">
     {% include "main/messages.html" %}
     
     {% if not page %}

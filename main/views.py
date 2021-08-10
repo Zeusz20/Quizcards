@@ -1,6 +1,7 @@
 import json
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import View
 from datetime import date
@@ -12,8 +13,7 @@ class IndexView(View):
     template_name = 'main/index.html'
 
     def get(self, request):
-
-        if request.GET.get('logout') == '':
+        if request.GET.get('logout') is not None:
             utils.delete_past_session(request)
 
         if utils.user_exists(request):
@@ -48,7 +48,6 @@ class IndexView(View):
 
 class UserView(View):
     template_name = 'main/user.html'
-    dynamic_template = utils.load_view_template('main/deck_view.html')
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -63,19 +62,13 @@ class UserView(View):
             user.save()
             return redirect('/user?page=1')
 
-        if request.GET.get('query'):
-            # user searched for a deck locally
-            page_manager = paging.get_search_page_manager(user, request.GET)
-            context.update({
-                'page': page_manager.page(request.GET.get('page', 1)),
-            })
-            return render(request, self.template_name, context)
-
         if request.GET.get('page'):
-            # no query, display all of user's decks with pagination
-            page_manager = paging.get_deck_page_manager(user)
+            # render user's deck with pagination, or
+            # if the user searches for some decks with a given query
+            # (locally = user's decks OR globally = everyone's decks)
+            # displays matching decks with pagination
             context.update({
-                'page': page_manager.page(request.GET['page']),
+                'page': paging.get_page(request.GET, user),
             })
             return render(request, self.template_name, context)
 
@@ -96,12 +89,6 @@ class UserView(View):
             'date_created': user.date_created,
         }
 
-    def _handle_deck_paging(self, request, user, context):
-        page_manager = paging.get_deck_page_manager(user)
-        context.update({
-            'page': page_manager.page(request.GET['page']),
-        })
-
     def _handle_delete(self, request):
         deck_id = request.POST['delete']
         deck = Deck.objects.get(pk=deck_id)
@@ -116,7 +103,6 @@ class UserView(View):
 
 class EditorView(View):
     template_name = 'main/editor.html'
-    dynamic_template = utils.load_view_template('main/base_card_view.html')
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -125,7 +111,9 @@ class EditorView(View):
         if request.GET.get('uuid'):
             context = self._load_deck(request)
         else:
-            context = self._create_deck()
+            context = {
+                'cards': [{}],  # empty card list with an empty card
+            }
 
         return render(request, self.template_name, context)
 
@@ -140,12 +128,6 @@ class EditorView(View):
 
         return redirect('/user')
 
-    def _create_deck(self):
-        return {
-            'cards': [{}],  # empty card list with dummy card
-            'template': self.dynamic_template
-        }
-
     def _load_deck(self, request):
         user = User.objects.get(pk=request.session['user_id'])
         deck = get_object_or_404(Deck, user=user, uuid=request.GET['uuid'])     # check if user owns the deck
@@ -153,9 +135,7 @@ class EditorView(View):
 
         return {
             'deck': utils.serialize(deck),
-            'card_ids': list(map(lambda card: card.pk, cards)),
             'cards': utils.serialize(cards),
-            'template': self.dynamic_template,
         }
 
     def _save_deck(self, request, data):
@@ -278,12 +258,12 @@ class SearchView(View):
     def get(self, request):
         if utils.user_exists(request):
             user = User.objects.get(pk=request.session['user_id'])
-            page_manager = paging.get_search_page_manager(user, request.GET)
+            page = paging.get_page(request.GET, user)
         else:
-            page_manager = paging.get_search_page_manager(None, request.GET)
+            page = paging.get_page(request.GET)
 
         context = {
-            'page': page_manager.page(request.GET['page'])
+            'page': page,
         }
 
         return render(request, self.template_name, context)

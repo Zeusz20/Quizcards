@@ -1,15 +1,15 @@
 var warn = true
+var saveButtonListener = null
 
 init()
 
 
 function init() {
     window.onload = warnUser
-
-    initTinyMCE()
-    updateEditorButtons()
-    document.getElementById('save-btn').onclick = save
     document.getElementById('new-card').onclick = addNewCard
+    document.getElementById('save-btn').onclick = save
+    saveButtonListener = setInterval(canSave, 100)
+    initEditor()
 }
 
 function warnUser() {
@@ -38,35 +38,41 @@ function getTinyMCEConfig(type) {
     }
 }
 
+function initEditor() {
+    initTinyMCE()
+    initDeleteButton()
+    initImageButtons('term')
+    initImageButtons('definition')
+}
+
 /* DECK EDITING */
 
-function addNewCard() {
-    let template = document.createElement('template')
-    template.innerHTML = cardTemplate.trim()
+function addNewCard() {        
+    const raw = document.getElementById('template').cloneNode(true)
+    const template = document.createElement('template')
+    template.innerHTML = raw.innerHTML.trim()
     
+    // replace the id attributes with name attribute, so tinyMCE can instantiate the editors correctly
+    Array.from(template.content.firstChild.getElementsByTagName('div'))
+        .filter(div => {
+            let id = div.getAttribute('id')
+            return id == 'term' || id == 'definition'
+        })
+        .forEach(div => {
+            let value = div.getAttribute('id')
+            div.removeAttribute('id')
+            div.setAttribute('name', value)
+        })
+
     document.getElementById('container').appendChild(template.content.firstChild)
     
-    initTinyMCE()
-    updateEditorButtons()
+    initEditor()
 }
 
-function updateEditorButtons() {
-    updateDeleteButtons()
-    updateImageButtons('term')
-    updateImageButtons('definition')
-}
-
-function updateDeleteButtons() {
+function initDeleteButton() {
     document.getElementsByName('delete-btn').forEach(btn => {
         btn.onclick = () => {
-            let cards = document.getElementsByName('card').length
-            if(cards !== 1) {
-                // deck must contain at least one card
-                const card = getCard(btn)
-                const editors = getEditors(card)
-                activeEditors = activeEditors.filter(editor => !editors.includes(editor))
-                btn.parentElement.parentElement.removeChild(card)
-            }
+            getCard(btn).remove()
         }
     })
 }
@@ -95,7 +101,7 @@ function getEditors(parent, acc=[]) {
     return acc.map(editor => editor.id)
 }
 
-function updateImageButtons(type) {
+function initImageButtons(type) {
     const imageName = type + '-image'
     const previewName = type + '-preview'
     const deleteBtnName = 'del-' + type + '-img'
@@ -156,33 +162,33 @@ function hideOrShowImageControls(imageName, previewName, deleteBtnName) {
 
 /* SAVE */
 
-function save() {
-    if(canSave()) {
-        warn = false
-
-        // checks for an update flag (are we editing an existing deck)
-        let update = (document.getElementById('uuid').value !== '')
-
-        // initialize deck data
-        const deck = document.createElement('input')
-        deck.setAttribute('type', 'hidden')
-        deck.setAttribute('name', 'deck')
-        deck.setAttribute('value', getDeckJson(update))
-        
-        const form = document.getElementById('editor')
-        form.appendChild(deck)
-        form.submit()
-    }
-    else {
-        alert('A deck must have a name and must contain at least 2 cards!')
-        warn = true
-    }
+/* save button event listener */
+function canSave() {
+    const button = document.getElementById('save-btn')
+    const name = document.getElementById('name').value.trim()
+    const cards = document.getElementsByName('card').length
+    
+    // deck must have a name and a minimum of 2 cards
+    // 3 comes from a hidden card element which is used as a template by the addNewCard function
+    button.disabled = (name === '' || cards < 3)
 }
 
-function canSave() {
-    const name = document.getElementById('name').value
-    const cards = document.getElementsByName('card').length
-    return (name !== '' && cards >= 2)
+function save() {
+    warn = false
+    clearInterval(saveButtonListener)
+
+    // checks for an update flag (are we editing an existing deck)
+    let update = (document.getElementById('uuid').value !== '')
+
+    // initialize deck data
+    const deck = document.createElement('input')
+    deck.setAttribute('type', 'hidden')
+    deck.setAttribute('name', 'deck')
+    deck.setAttribute('value', getDeckJson(update))
+    
+    const form = document.getElementById('editor')
+    form.appendChild(deck)
+    form.submit()
 }
 
 /** @param {boolean} addPrimaryKey - used when editing an existing deck */
@@ -237,6 +243,7 @@ function getImage(node, type) {
     return getFilename(image.getAttribute('src'))
 }
 
+/* copied from: https://stackoverflow.com/questions/857618/javascript-how-to-extract-filename-from-a-file-input-control */
 function getFilename(path) {
     let startIndex = (path.indexOf('\\') >= 0 ? path.lastIndexOf('\\') : path.lastIndexOf('/'))
     let filename = path.substring(startIndex)
