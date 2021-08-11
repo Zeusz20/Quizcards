@@ -10,7 +10,7 @@ from .models import *
 
 
 class IndexView(View):
-    template_name = 'main/index.html'
+    template_name = 'main/index/index.html'
 
     def get(self, request):
         if request.GET.get('logout') is not None:
@@ -47,7 +47,7 @@ class IndexView(View):
 
 
 class UserView(View):
-    template_name = 'main/user.html'
+    template_name = 'main/user/user.html'
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -60,7 +60,7 @@ class UserView(View):
             # GET is empty, user has freshly logged in
             user.last_login = date.today()
             user.save()
-            return redirect('/user?page=1')
+            return redirect('/user/?page=1')
 
         if request.GET.get('page'):
             # render user's deck with pagination, or
@@ -102,7 +102,7 @@ class UserView(View):
 
 
 class EditorView(View):
-    template_name = 'main/editor.html'
+    template_name = 'main/editor/editor.html'
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -250,6 +250,14 @@ class EditorView(View):
             file.name = name + '.' + ext
 
         return file
+
+
+class StudyView(View):
+    template_name = 'main/study/study.html'
+
+    def get(self, request):
+        context = {}
+        return render(request, self.template_name, context)
 
 
 class SearchView(View):

@@ -32,7 +32,7 @@
             <!-- Edit cards -->
             <div id="container" class="container">
                 {% for card in cards %}
-                    {% include "main/card_view.html" %}
+                    {% include "main/editor/card_view.html" %}
                 {% endfor %}
             </div>
             <button id='new-card' type="button" class="btn btn-secondary col-12 mb-3">+ Add new card +</button>
@@ -40,7 +40,7 @@
     </div>
 
     <div id="template" hidden>
-        {% include 'main/base_card_view.html' %}
+        {% include 'main/editor/base_card_view.html' %}
     </div>
 {% endblock content %}
 

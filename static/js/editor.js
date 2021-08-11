@@ -51,7 +51,10 @@ function addNewCard() {
     const raw = document.getElementById('template').cloneNode(true)
     const template = document.createElement('template')
     template.innerHTML = raw.innerHTML.trim()
-    
+
+    // add name attribute
+    template.content.firstChild.setAttribute('name', 'card')
+
     // replace the id attributes with name attribute, so tinyMCE can instantiate the editors correctly
     Array.from(template.content.firstChild.getElementsByTagName('div'))
         .filter(div => {
@@ -169,8 +172,7 @@ function canSave() {
     const cards = document.getElementsByName('card').length
     
     // deck must have a name and a minimum of 2 cards
-    // 3 comes from a hidden card element which is used as a template by the addNewCard function
-    button.disabled = (name === '' || cards < 3)
+    button.disabled = (name === '' || cards < 2)
 }
 
 function save() {

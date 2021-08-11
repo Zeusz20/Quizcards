@@ -21,18 +21,18 @@
         <p class="text-muted">No decks.</p>
     {% else %}
         {% for deck in page.object_list %}
-            {% include "main/deck_view.html" %}
+            {% include "main/user/deck_view.html" %}
         {% endfor %}
 
         <div id="paging" class="my-2">
             {% if page.has_previous %}
-                <a href="/user?page={{ page.previous_page_number }}"><< Previous</a>
+                <a href="/user/?page={{ page.previous_page_number }}"><< Previous</a>
             {% endif %}
             {% if page.has_previous or page.has_next %}
                 |
             {% endif %}
             {% if page.has_next %}
-                <a href="/user?page={{ page.next_page_number }}">Next >></a>
+                <a href="/user/?page={{ page.next_page_number }}">Next >></a>
             {% endif %}
         </div>
     {% endif %}

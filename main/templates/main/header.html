@@ -1,8 +1,8 @@
 <nav class="navbar zeusz-nav">
     <h3>Quizcards</h3>
     {% if request.session.user_id %}
-        <a href="/user?page=1">Home</a>
-        <a href="/user?view=manage">Profile</a>
+        <a href="/user/?page=1">Home</a>
+        <a href="/user/?view=manage">Profile</a>
         <a href="/?logout=">Log out</a>
     {% else %}
         <a href="/?view=login">Log In</a>

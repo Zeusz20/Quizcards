@@ -1,0 +1,25 @@
+<nav class="nav nav-pills flex-column">
+    {% if request.GET.type == "flashcards" %}
+        <a class="nav-link active">Flashcards</a>
+    {% else %}
+        <a href="/study/?uuid={{ request.GET.uuid }}&type=flashcards" class="nav-link">Flashcards</a>
+    {% endif %}
+
+    {% if request.GET.type == "study" %}
+        <a class="nav-link active">Study</a>
+    {% else %}
+        <a href="/study/?uuid={{ request.GET.uuid }}&type=study" class="nav-link">Study</a>
+    {% endif %}
+
+    {% if request.GET.type == "write" %}
+        <a class="nav-link active">Write</a>
+    {% else %}
+        <a href="/study/?uuid={{ request.GET.uuid }}&type=write" class="nav-link">Write</a>
+    {% endif %}
+
+    {% if request.GET.type == "test" %}
+        <a class="nav-link active">Test</a>
+    {% else %}
+        <a href="/study/?uuid={{ request.GET.uuid }}&type=test" class="nav-link">Test</a>
+    {% endif %}
+</nav>

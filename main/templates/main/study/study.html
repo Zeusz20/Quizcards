@@ -1,0 +1,17 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+    {% include "main/header.html" %}
+    <center>
+        <div class="container">
+            <div class="row">
+                <div class="col-2">
+                    {% include "main/study/study_nav.html" %}
+                </div>
+                <div class="col border rounded">
+                    Study rendering
+                </div>
+            </div>
+        </div>
+    </center>
+{% endblock content %}

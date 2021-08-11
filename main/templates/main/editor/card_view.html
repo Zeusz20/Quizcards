@@ -9,13 +9,13 @@
         {% if request.GET.uuid %}
             <div name="term">{% autoescape off %} {{ card.fields.term }} {% endautoescape %}</div>
             {% if card.fields.term_image %}
-                {% include 'main/image_uploader.html' with type='term' image=card.fields.term_image %}
+                {% include 'main/editor/image_uploader.html' with type='term' image=card.fields.term_image %}
             {% else %}
-                {% include 'main/image_uploader.html' with type='term' %}
+                {% include 'main/editor/image_uploader.html' with type='term' %}
             {% endif %}
         {% else %}
             <div name="term"></div>
-            {% include 'main/image_uploader.html' with type='term' %}
+            {% include 'main/editor/image_uploader.html' with type='term' %}
         {% endif %}
     </div>
 
@@ -25,13 +25,13 @@
         {% if request.GET.uuid %}
             <div name="definition">{% autoescape off %} {{ card.fields.definition }} {% endautoescape %}</div>
             {% if card.fields.definition_image %}
-                {% include 'main/image_uploader.html' with type='definition' image=card.fields.definition_image %}
+                {% include 'main/editor/image_uploader.html' with type='definition' image=card.fields.definition_image %}
             {% else %}
-                {% include 'main/image_uploader.html' with type='definition' %}
+                {% include 'main/editor/image_uploader.html' with type='definition' %}
             {% endif %}
         {% else %}
             <div name="definition"></div>
-            {% include 'main/image_uploader.html' with type='definition' %}
+            {% include 'main/editor/image_uploader.html' with type='definition' %}
         {% endif %}
     </div>
 

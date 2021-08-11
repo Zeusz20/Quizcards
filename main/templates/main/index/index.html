@@ -7,11 +7,11 @@
         {% if form == "register" %}
             <h5>Register</h5>
             {% include "main/messages.html" %}
-            {% include "main/register_form.html" %}
+            {% include "main/index/register_form.html" %}
         {% else %}
             <h5>Log In</h5>
             {% include "main/messages.html" %}
-            {% include "main/login_form.html" %}
+            {% include "main/index/login_form.html" %}
         {% endif %}
     </div>
 {% endblock content %}

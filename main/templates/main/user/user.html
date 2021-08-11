@@ -4,10 +4,10 @@
     {% include "main/header.html" %}
     <div class="col-11">
         {% if request.GET.view == "manage" %}
-            {% include "main/user_manage.html" %}
+            {% include "main/user/user_manage.html" %}
         {% else %}
             <h3>Welcome {{ username }}!</h3>
-            {% include "main/user_main.html" %}
+            {% include "main/user/user_main.html" %}
         {% endif %}
     </div>
 {% endblock content %}
