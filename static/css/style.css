@@ -1,3 +1,8 @@
+.zeusz-unstyled {
+    color: black;
+    text-decoration: none;
+}
+
 .zeusz-nav {
     justify-content: space-evenly; 
     position: sticky;

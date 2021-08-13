@@ -1,25 +1,40 @@
 <nav class="nav nav-pills flex-column">
-    {% if request.GET.type == "flashcards" %}
+    <small class="text-muted">Study</small>
+    <hr>
+
+    {% if request.path == "/flashcards/" %}
         <a class="nav-link active">Flashcards</a>
     {% else %}
-        <a href="/study/?uuid={{ request.GET.uuid }}&type=flashcards" class="nav-link">Flashcards</a>
+    <a href="/flashcards/?uuid={{ request.GET.uuid }}" class="nav-link">Flashcards</a>
     {% endif %}
 
-    {% if request.GET.type == "study" %}
-        <a class="nav-link active">Study</a>
+    {% if request.path == "/learn/" %}
+        <a class="nav-link active">Learn</a>
     {% else %}
-        <a href="/study/?uuid={{ request.GET.uuid }}&type=study" class="nav-link">Study</a>
+        <a href="/learn/?uuid={{ request.GET.uuid }}&q=1" class="nav-link">Learn</a>
     {% endif %}
 
-    {% if request.GET.type == "write" %}
+    {% if request.path == "/write/" %}
         <a class="nav-link active">Write</a>
     {% else %}
-        <a href="/study/?uuid={{ request.GET.uuid }}&type=write" class="nav-link">Write</a>
+        <a href="/write/?uuid={{ request.GET.uuid }}" class="nav-link">Write</a>
     {% endif %}
 
-    {% if request.GET.type == "test" %}
+    {% if request.path == "/test/" %}
         <a class="nav-link active">Test</a>
     {% else %}
-        <a href="/study/?uuid={{ request.GET.uuid }}&type=test" class="nav-link">Test</a>
+        <a href="/study/?uuid={{ request.GET.uuid }}" class="nav-link">Test</a>
     {% endif %}
+
+    <hr>
+
+    Start with:
+    <form method="post">
+        {% csrf_token %}
+        <select name="start">
+            <option value="term">Term</option>
+            <option value="definition">Definition</option>
+        </select>
+        <button type="submit" class="btn btn-outline-success p-1">Save</button>
+    </form>
 </nav>

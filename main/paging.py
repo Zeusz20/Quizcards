@@ -6,34 +6,36 @@ USER_VIEW_PAGE_SIZE = 7
 SEARCH_VIEW_PAGE_SIZE = 10
 
 
-def get_page(get, user=None):
-    # param user is None for non logged in users
-    if get.get('query'):
-        # user searched for some decks
-        local = get.get('local') is not None
-        page_count = USER_VIEW_PAGE_SIZE if local else SEARCH_VIEW_PAGE_SIZE
-        decks = get_decks(get['query'], user, local)
-        page_manager = Paginator(decks, page_count)
-        return page_manager.page(get['page'])
-    else:
-        # display user's decks with pagination
-        page_manager = Paginator(Deck.objects.filter(user=user), USER_VIEW_PAGE_SIZE)
-        return page_manager.page(get['page'])
+def get_default_page_manager(per_page=1):
+    return Paginator(list(), per_page)
 
 
-def get_decks(query, user, local):
+def get_decks(user=None, query='', local=False):
     if user is None:
+        # non logged in user's global sear
         return Deck.objects.filter(
             Q(name__icontains=query) | Q(description__icontains=query)
         )
 
+    if query == '':
+        # logged in user's deck pagination
+        return Deck.objects.filter(user=user)
+
     if local:
+        # logged in user's local search
         return Deck.objects.filter(
             Q(user=user),
             Q(name__icontains=query) | Q(description__icontains=query)
         )
     else:
+        # logged in user's global search
         return Deck.objects.filter(
             ~Q(user=user),
             Q(name__icontains=query) | Q(description__icontains=query)
         )
+
+
+class QueryPaginator(Paginator):
+    def __init__(self, query='', object_list=[], per_page=1):
+        super().__init__(object_list, per_page)
+        self.query = query

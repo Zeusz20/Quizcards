@@ -3,6 +3,8 @@ import json
 from django.conf import settings
 from django.core import serializers
 from os import path
+from random import choice
+from string import ascii_letters, digits
 
 
 def user_exists(request):
@@ -28,6 +30,10 @@ def serialize(query):
     raw = serializers.serialize('json', queryset)
     serialized = json.loads(raw)
     return serialized if is_iterable else serialized.pop()
+
+
+def random_string(length):
+    return ''.join(choice(ascii_letters + digits) for _ in range(length))
 
 
 def validate_datetime(day, hour, minute):

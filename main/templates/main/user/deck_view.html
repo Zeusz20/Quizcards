@@ -8,7 +8,7 @@
             <small class="text-muted">Last modified: {{ deck.last_modified }}</small>
         </p>
         <div class="card-footer bg-transparent ps-0">
-            <a href="/study/?uuid={{ deck.uuid }}&type=flashcards" class="btn btn-primary">Study</a>
+            <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary">Study</a>
             <a href="/editor/?uuid={{ deck.uuid }}" class="btn btn-success">Edit</a>
             <button type="button" class="btn btn-danger"
                     data-bs-toggle="collapse" data-bs-target="#confirm-{{ deck.pk }}"

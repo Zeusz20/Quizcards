@@ -1,11 +1,11 @@
 import json
 
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import View
 from datetime import date
-from . import authentication as auth, paging, utils
+from os.path import basename
+from . import authentication as auth, paging, testgen, utils
 from .models import *
 
 
@@ -46,8 +46,32 @@ class IndexView(View):
             messages.success(request, 'Registration successful!')
 
 
+class SearchView(View):
+    template_name = 'main/search.html'
+    page_manager = paging.get_default_page_manager(paging.SEARCH_VIEW_PAGE_SIZE)
+
+    def get(self, request):
+        if len(self.page_manager.object_list) == 0:
+            self._get_object_list(request)
+
+        context = {
+            'page': self.page_manager.page(request.GET['page']),
+        }
+
+        return render(request, self.template_name, context)
+
+    def _get_object_list(self, request):
+        if utils.user_exists(request):
+            user = User.objects.get(pk=request.session['user_id'])
+            self.page_manager.object_list = paging.get_decks(user, request.GET['query'], local=False)
+        else:
+            self.page_manager.object_list = paging.get_decks(None, request.GET['query'], local=False)
+
+
 class UserView(View):
     template_name = 'main/user/user.html'
+    display_page_manager = None     # used for displaying all of user's decks with pagination
+    search_page_manager = None      # used for displaying a select number of user's decks (local search)
 
     def get(self, request):
         if not utils.user_exists(request):
@@ -56,20 +80,35 @@ class UserView(View):
         user = User.objects.get(pk=request.session['user_id'])
         context = self._get_user_data(user)
 
-        if not list(request.GET):
-            # GET is empty, user has freshly logged in
+        if len(request.GET) == 0:
+            # user freshly logged in
             user.last_login = date.today()
             user.save()
             return redirect('/user/?page=1')
 
         if request.GET.get('page'):
-            # render user's deck with pagination, or
-            # if the user searches for some decks with a given query
-            # (locally = user's decks OR globally = everyone's decks)
-            # displays matching decks with pagination
-            context.update({
-                'page': paging.get_page(request.GET, user),
-            })
+            query = request.GET.get('query')
+
+            if query is not None:
+                # user searched for decks
+                if self.search_page_manager is None or self.search_page_manager.query != query:
+                    decks = paging.get_decks(user, query, local=True)
+                    self.search_page_manager = paging.QueryPaginator(query, decks, paging.USER_VIEW_PAGE_SIZE)
+
+                page = self._get_page(self.search_page_manager, request.GET['page'])
+            else:
+                # no query, display user's decks with pagination
+                if self.search_page_manager is not None:
+                    # reset search page manager
+                    self.search_page_manager.query = ''
+
+                if self.display_page_manager is None:
+                    decks = paging.get_decks(user)
+                    self.display_page_manager = paging.Paginator(decks, paging.USER_VIEW_PAGE_SIZE)
+
+                page = self._get_page(self.display_page_manager, request.GET['page'])
+
+            context.update(page)
             return render(request, self.template_name, context)
 
         # render user's manage page
@@ -87,6 +126,11 @@ class UserView(View):
         return {
             'username': user.username,
             'date_created': user.date_created,
+        }
+
+    def _get_page(self, page_manager, page):
+        return {
+            'page': page_manager.page(page),
         }
 
     def _handle_delete(self, request):
@@ -120,6 +164,8 @@ class EditorView(View):
     def post(self, request):
         data = json.loads(request.POST['deck'])
         update = data.get('uuid')
+
+        self._make_unique(request.FILES)
 
         if update:
             self._update_deck(request, data)
@@ -162,15 +208,15 @@ class EditorView(View):
         definition_images = request.FILES.getlist('definition-image')
 
         for card in data['cards']:
-            term_image = term_images.pop(0) if card['term_image'] != '' else None
-            definition_image = definition_images.pop(0) if card['definition_image'] != '' else None
+            term_image = term_images.pop(0) if card['term_image'] else None
+            definition_image = definition_images.pop(0) if card['definition_image'] else None
 
             Card(
                 deck=deck,
                 term=card['term'],
-                term_image=self._make_unique(term_image),
+                term_image=term_image,
                 definition=card['definition'],
-                definition_image=self._make_unique(definition_image)
+                definition_image=definition_image
             ).save()
 
     def _update_deck(self, request, data):
@@ -187,11 +233,11 @@ class EditorView(View):
         for card in cards:
             # get corresponding card by primary key from POST
             new = list(filter(lambda post: card.pk == post['pk'], data['cards']))
-            try:
+            if len(new) != 0:
                 new = new.pop()
                 self._update(card, new, 'term', 'definition')
                 self._update_images(request, card, new)
-            except IndexError:
+            else:
                 # card is not present in POST because it was deleted
                 card.delete()
 
@@ -200,19 +246,17 @@ class EditorView(View):
         self._save_cards(request, deck, data)
 
     def _update_images(self, request, card, new):
-        from os.path import basename
-
         modified = False
         term_images = request.FILES.getlist('term-image')
-        definition_images = request.FILES.getlist('definition_image')
+        definition_images = request.FILES.getlist('definition-image')
 
         if basename(card.term_image.name) != new['term_image']:
-            term_image = term_images.pop(0) if new['term_image'] != '' else None
-            card.term_image = self._make_unique(term_image)
+            term_image = term_images.pop(0) if new['term_image'] else None
+            card.term_image = term_image
             modified = True
         if basename(card.definition_image.name) != new['definition_image']:
             definition_image = definition_images.pop(0) if new['definition_image'] else None
-            card.definition_image = self._make_unique(definition_image)
+            card.definition_image = definition_image
             modified = True
 
         if modified:
@@ -239,39 +283,84 @@ class EditorView(View):
         if modified:
             model.save()
 
-    def _make_unique(self, file, unique_id_length=7):
-        from random import choice
-        from string import ascii_letters, digits
+    def _make_unique(self, files, unique_id_length=7):
+        for image in ('term-image', 'definition-image'):
+            for file in files.getlist(image):
+                if file:
+                    name, ext = file.name.split('.')
+                    unique_id = utils.random_string(unique_id_length)
+                    name = name + '_' + unique_id
+                    file.name = name + '.' + ext
 
-        if file:
-            name, ext = file.name.split('.')
-            unique_id = ''.join(choice(ascii_letters + digits) for _ in range(unique_id_length))
-            name = name + '_' + unique_id
-            file.name = name + '.' + ext
 
-        return file
+class FlashcardsView(View):
+    template_name = 'main/study/flashcards/flashcards.html'
+
+    def get(self, request):
+        context = self._get_flashcards(request.GET['uuid'])
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        context = self._get_flashcards(request.GET['uuid'])
+        return render(request, self.template_name, context)
+
+    def _get_flashcards(self, uuid):
+        deck = get_object_or_404(Deck, uuid=uuid)
+        cards = Card.objects.filter(deck=deck)
+        return {
+            'cards': utils.serialize(cards),
+        }
+
+
+class LearnView(View):
+    template_name = 'main/study/learn/learn.html'
+    page_manager = None
+
+    def get(self, request):
+        if self.page_manager is None:
+            questions = testgen.generate_questions(request.GET['uuid'])
+            self.page_manager = paging.Paginator(questions, 1)
+
+        context = {
+            'page': self.page_manager.page(request.GET['q']),
+        }
+
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        questions = testgen.generate_questions(request.GET['uuid'], request.POST['start'])
+        self.page_manager = paging.Paginator(questions, 1)
+
+        context = {
+            'page': self.page_manager.page(request.GET['q']),
+        }
+
+        return render(request, self.template_name, context)
 
 
 class StudyView(View):
     template_name = 'main/study/study.html'
 
     def get(self, request):
-        context = {}
-        return render(request, self.template_name, context)
+        deck = get_object_or_404(Deck, uuid=request.GET['uuid'])
+        cards = Card.objects.filter(deck=deck)
+        start_with = request.GET.get('start_with', 'term')
 
-
-class SearchView(View):
-    template_name = 'main/search.html'
-
-    def get(self, request):
-        if utils.user_exists(request):
-            user = User.objects.get(pk=request.session['user_id'])
-            page = paging.get_page(request.GET, user)
+        if request.GET['type'] == 'study':
+            context = {
+                'question': testgen.get(request, start_with),
+            }
+        elif request.GET['type'] == 'write':
+            context = {}
+        elif request.GET['type'] == 'test':
+            context = {}
         else:
-            page = paging.get_page(request.GET)
+            # default type: flashcards
+            context = {
+                'cards': utils.serialize(cards),
+            }
 
-        context = {
-            'page': page,
-        }
-
+        context.update({
+            'start_with': start_with,
+        })
         return render(request, self.template_name, context)
