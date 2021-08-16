@@ -1,4 +1,4 @@
-{% if request.GET.uuid %}
+{% if request.session.uuid %}
 <div id="{{ card.pk }}" name="card" class="row my-5 zeusz-card">
 {% else %}
 <div name="card" class="row my-5 zeusz-card">
@@ -6,7 +6,7 @@
     <div class="col">
         <h6>Term</h6>
 
-        {% if request.GET.uuid %}
+        {% if request.session.uuid %}
             <div name="term">{% autoescape off %} {{ card.fields.term }} {% endautoescape %}</div>
             {% if card.fields.term_image %}
                 {% include 'main/editor/image_uploader.html' with type='term' image=card.fields.term_image %}
@@ -22,7 +22,7 @@
     <div class="col">
         <h6>Definition</h6>
 
-        {% if request.GET.uuid %}
+        {% if request.session.uuid %}
             <div name="definition">{% autoescape off %} {{ card.fields.definition }} {% endautoescape %}</div>
             {% if card.fields.definition_image %}
                 {% include 'main/editor/image_uploader.html' with type='definition' image=card.fields.definition_image %}

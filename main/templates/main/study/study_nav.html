@@ -5,13 +5,13 @@
     {% if request.path == "/flashcards/" %}
         <a class="nav-link active">Flashcards</a>
     {% else %}
-    <a href="/flashcards/?uuid={{ request.GET.uuid }}" class="nav-link">Flashcards</a>
+    <a href="/flashcards/" class="nav-link">Flashcards</a>
     {% endif %}
 
-    {% if request.path == "/learn/" %}
+    {% if "learn" in request.path %}
         <a class="nav-link active">Learn</a>
     {% else %}
-        <a href="/learn/?uuid={{ request.GET.uuid }}&q=1" class="nav-link">Learn</a>
+        <a href="/learn/1" class="nav-link">Learn</a>
     {% endif %}
 
     <hr>

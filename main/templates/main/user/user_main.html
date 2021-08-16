@@ -1,18 +1,16 @@
 <div class="col-md-2">
     <a href="/editor" class="btn btn-success mb-2">Create a new deck</a>
 
-    <form method="get">
+    <form method="post">
+        {% csrf_token %}
         <div class="input-group">
-            <input type="text" name="query" placeholder="Search your decks" value="{{ request.GET.query }}" class="form-control mb-2">
-            <input type="hidden" name="page" value="1">
+            <input type="text" name="query" placeholder="Search your decks" class="form-control mb-2">
+            <input type="hidden" name="search" value="search">
             <div class="input-group-append">
                 <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </div>
     </form>
-    {% if request.GET.query %}
-        <a href="/user/?page=1" class="btn btn-outline-secondary">Clear</a>
-    {% endif %}
 </div>
 <br>
 
@@ -28,20 +26,20 @@
 
         <div id="paging" class="my-2">
             {% if page.has_previous %}
-                {% if request.GET.query %}
-                    <a href="/user/?query={{ request.GET.query }}&page={{ page.previous_page_number }}"><< Previous</a>
+                {% if request.session.local_search %}
+                    <a href="/user/search/{{ page.previous_page_number }}"><< Previous</a>
                 {% else %}
-                    <a href="/user/?page={{ page.previous_page_number }}"><< Previous</a>
+                    <a href="/user/{{ page.previous_page_number }}"><< Previous</a>
                 {% endif %}
             {% endif %}
             {% if page.has_previous or page.has_next %}
                 |
             {% endif %}
             {% if page.has_next %}
-                {% if request.GET.query %}
-                    <a href="/user/?query={{ request.GET.query }}&page={{ page.next_page_number }}">Next >></a>
+                {% if request.session.local_search %}
+                    <a href="/user/search/{{ page.next_page_number }}">Next >></a>
                 {% else %}
-                    <a href="/user/?page={{ page.next_page_number }}">Next >></a>
+                    <a href="/user/{{ page.next_page_number }}">Next >></a>
                 {% endif %}
             {% endif %}
         </div>

@@ -1,146 +1,178 @@
 import json
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.generic import View
+from abc import ABCMeta, abstractmethod
 from datetime import date
 from os.path import basename
-from . import authentication as auth, paging, testgen, utils
+from . import authentication as auth, testgen, utils
 from .models import *
+
+
+class PagingView(View, metaclass=ABCMeta):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.page_manager = None
+
+    @abstractmethod
+    def init_page_manager(self, request):
+        pass
 
 
 class IndexView(View):
     template_name = 'main/index/index.html'
+    form = None
 
     def get(self, request):
+        utils.clear_editor(request)
+
         if request.GET.get('logout') is not None:
-            utils.delete_past_session(request)
+            request.session.clear()
 
         if utils.user_exists(request):
             return redirect('/user')
 
-        if request.GET.get('view') is None:
-            return redirect('/?view=login')
+        if self.form is None:
+            return redirect('/login')
 
         context = {
-            'form': request.GET['view'],
+            'form': self.form,
         }
 
         return render(request, self.template_name, context)
 
     def post(self, request):
-        if request.GET['view'] == 'register':
-            self._handle_registration(request)
-            return redirect('/')
-        else:
-            self._handle_login(request)
+        if self.form == 'login':
+            self.handle_login(request)
             return redirect('/user')
+        elif self.form == 'register':
+            self.handle_registration(request)
+            return redirect('/login')
 
-    def _handle_login(self, request):
+    def handle_login(self, request):
         if auth.validate_login(request):
             user = User.objects.get(username=request.POST['username'])
             request.session['user_id'] = user.pk    # create session for user
 
-    def _handle_registration(self, request):
+    def handle_registration(self, request):
         if auth.validate_registration(request):
             messages.success(request, 'Registration successful!')
 
 
-class SearchView(View):
+class SearchView(PagingView):
     template_name = 'main/search.html'
-    page_manager = paging.get_default_page_manager(paging.SEARCH_VIEW_PAGE_SIZE)
 
-    def get(self, request):
-        if len(self.page_manager.object_list) == 0:
-            self._get_object_list(request)
+    def get(self, request, **kwargs):
+        utils.clear_editor(request)
+
+        if self.page_manager is None:
+            self.init_page_manager(request)
 
         context = {
-            'page': self.page_manager.page(request.GET['page']),
+            'page': self.page_manager.page(kwargs['page']),
         }
 
         return render(request, self.template_name, context)
 
-    def _get_object_list(self, request):
-        if utils.user_exists(request):
-            user = User.objects.get(pk=request.session['user_id'])
-            self.page_manager.object_list = paging.get_decks(user, request.GET['query'], local=False)
-        else:
-            self.page_manager.object_list = paging.get_decks(None, request.GET['query'], local=False)
+    def post(self, request, **kwargs):
+        request.session['global_search'] = request.POST['query']
+        self.init_page_manager(request)
+
+        context = {
+            'page': self.page_manager.page(kwargs['page']),
+        }
+        return render(request, self.template_name, context)
+
+    def init_page_manager(self, request):
+        try:
+            user = User.objects.get(pk=request.session.get('user_id'))
+        except User.DoesNotExist:
+            user = None
+
+        decks = utils.get_decks_from_query(user, request.session['global_search'], local=False)
+        self.page_manager = Paginator(decks, utils.SEARCH_VIEW_PAGE_SIZE)
 
 
-class UserView(View):
+class UserView(PagingView):
     template_name = 'main/user/user.html'
-    display_page_manager = None     # used for displaying all of user's decks with pagination
-    search_page_manager = None      # used for displaying a select number of user's decks (local search)
+    site = None
 
-    def get(self, request):
+    def get(self, request, **kwargs):
+        utils.clear_editor(request)
+
         if not utils.user_exists(request):
             return redirect('/')
 
         user = User.objects.get(pk=request.session['user_id'])
-        context = self._get_user_data(user)
+        context = {
+            'user': user,
+        }
 
-        if len(request.GET) == 0:
-            # user freshly logged in
+        # fresh login tasks
+        if self.site is None and kwargs.get('page') is None:
             user.last_login = date.today()
             user.save()
-            return redirect('/user/?page=1')
+            return redirect('/user/1')
 
-        if request.GET.get('page'):
-            query = request.GET.get('query')
-
-            if query is not None:
-                # user searched for decks
-                if self.search_page_manager is None or self.search_page_manager.query != query:
-                    decks = paging.get_decks(user, query, local=True)
-                    self.search_page_manager = paging.QueryPaginator(query, decks, paging.USER_VIEW_PAGE_SIZE)
-
-                page = self._get_page(self.search_page_manager, request.GET['page'])
-            else:
-                # no query, display user's decks with pagination
-                if self.search_page_manager is not None:
-                    # reset search page manager
-                    self.search_page_manager.query = ''
-
-                if self.display_page_manager is None:
-                    decks = paging.get_decks(user)
-                    self.display_page_manager = paging.Paginator(decks, paging.USER_VIEW_PAGE_SIZE)
-
-                page = self._get_page(self.display_page_manager, request.GET['page'])
-
-            context.update(page)
+        # renders
+        if self.site is None:
+            context = self.get_home_page(request, context, **kwargs)
             return render(request, self.template_name, context)
+        else:
+            if self.site == 'search':
+                context = self.get_search_page(request, context, **kwargs)
+                return render(request, self.template_name, context)
+            elif self.site == 'manage':
+                return render(request, self.template_name, context)
 
-        # render user's manage page
-        return render(request, self.template_name, context)
-
-    def post(self, request):
-        if request.POST.get('delete'):
-            self._handle_delete(request)    # user deletes a deck
+    def post(self, request, **kwargs):
+        if request.POST.get('search'):
+            request.session['local_search'] = request.POST['query'].strip()
+            return redirect('/user/search/1')
+        elif request.POST.get('delete'):
+            self.handle_delete(request)     # user deletes a deck
             return redirect('/user')
         else:
-            self._handle_password_change(request)
+            self.handle_password_change(request)
             return redirect('/user')
 
-    def _get_user_data(self, user):
-        return {
-            'username': user.username,
-            'date_created': user.date_created,
-        }
+    def init_page_manager(self, request):
+        user = request.session['user_id']
+        query = request.session.get('local_search') or ''
+        decks = utils.get_decks_from_query(user, query, local=True)
+        self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
 
-    def _get_page(self, page_manager, page):
-        return {
-            'page': page_manager.page(page),
-        }
+    def get_home_page(self, request, context, **kwargs):
+        if request.session.get('local_search'):
+            del request.session['local_search']
 
-    def _handle_delete(self, request):
+        if self.page_manager is None:
+            self.init_page_manager(request)
+
+        context.update({
+            'page': self.page_manager.page(kwargs['page']),
+        })
+        return context
+
+    def get_search_page(self, request, context, **kwargs):
+        if self.page_manager is None:
+            self.init_page_manager(request)
+
+        context.update({
+            'page': self.page_manager.page(kwargs['page']),
+        })
+        return context
+
+    def handle_delete(self, request):
         deck_id = request.POST['delete']
         deck = Deck.objects.get(pk=deck_id)
         name = deck.name
         deck.delete()
         messages.success(request, f'Deck "{name}" was successfully deleted.')
 
-    def _handle_password_change(self, request):
+    def handle_password_change(self, request):
         if auth.change_password(request):
             messages.success(request, 'Password changed successfully.')
 
@@ -153,7 +185,11 @@ class EditorView(View):
             return redirect('/')
 
         if request.GET.get('uuid'):
-            context = self._load_deck(request)
+            request.session['uuid'] = request.GET['uuid']
+            return redirect('/editor')
+
+        if request.session.get('uuid') is not None:
+            context = self.load_deck(request)
         else:
             context = {
                 'cards': [{}],  # empty card list with an empty card
@@ -168,15 +204,15 @@ class EditorView(View):
         self._make_unique(request.FILES)
 
         if update:
-            self._update_deck(request, data)
+            self.update_deck(request, data)
         else:
-            self._save_deck(request, data)
+            self.save_deck(request, data)
 
         return redirect('/user')
 
-    def _load_deck(self, request):
+    def load_deck(self, request):
         user = User.objects.get(pk=request.session['user_id'])
-        deck = get_object_or_404(Deck, user=user, uuid=request.GET['uuid'])     # check if user owns the deck
+        deck = get_object_or_404(Deck, user=user, uuid=request.session['uuid'])     # check if user owns the deck
         cards = Card.objects.filter(deck=deck)
 
         return {
@@ -184,7 +220,7 @@ class EditorView(View):
             'cards': utils.serialize(cards),
         }
 
-    def _save_deck(self, request, data):
+    def save_deck(self, request, data):
         from uuid import uuid4
 
         user = User.objects.get(pk=request.session['user_id'])
@@ -200,10 +236,10 @@ class EditorView(View):
         )
 
         deck.save()
-        self._save_cards(request, deck, data)
+        self.save_cards(request, deck, data)
         messages.success(request, f'Deck "{deck.name}" created successfully.')
 
-    def _save_cards(self, request, deck, data):
+    def save_cards(self, request, deck, data):
         term_images = request.FILES.getlist('term-image')
         definition_images = request.FILES.getlist('definition-image')
 
@@ -219,15 +255,14 @@ class EditorView(View):
                 definition_image=definition_image
             ).save()
 
-    def _update_deck(self, request, data):
-        Deck.objects.filter(uuid=data['uuid']).update()
+    def update_deck(self, request, data):
         deck = Deck.objects.get(uuid=data['uuid'])
         data['last_modified'] = date.today()
         self._update(deck, data, 'name', 'description', 'last_modified')
-        self._update_cards(request, deck, data)
+        self.update_cards(request, deck, data)
         messages.success(request, f'Deck "{deck.name}" updated successfully.')
 
-    def _update_cards(self, request, deck, data):
+    def update_cards(self, request, deck, data):
         cards = Card.objects.filter(deck=deck)
 
         for card in cards:
@@ -236,16 +271,16 @@ class EditorView(View):
             if len(new) != 0:
                 new = new.pop()
                 self._update(card, new, 'term', 'definition')
-                self._update_images(request, card, new)
+                self.update_images(request, card, new)
             else:
                 # card is not present in POST because it was deleted
                 card.delete()
 
         # filter out and save newly added cards
         data['cards'] = list(filter(lambda card: card['pk'] is None, data['cards']))
-        self._save_cards(request, deck, data)
+        self.save_cards(request, deck, data)
 
-    def _update_images(self, request, card, new):
+    def update_images(self, request, card, new):
         modified = False
         term_images = request.FILES.getlist('term-image')
         definition_images = request.FILES.getlist('definition-image')
@@ -296,60 +331,78 @@ class EditorView(View):
 class StudyView(View):
     """Base class for those view classes which handle the studying aspect of quizcards."""
 
-    # static class variable
-    # stores 'start_with with' setting
-    start_with = 'term'
-
     def post(self, request):
-        """Handles 'start_with with' setting."""
-        StudyView.start_with = request.POST['start-with']
+        """Handles 'start with' setting."""
+        request.session['start_with'] = request.POST['start-with']
+
+    def get_uuid_and_redirect(self, request, redirect_to):
+        if request.GET.get('uuid'):
+            request.session['uuid'] = request.GET['uuid']
+            return redirect(redirect_to)
+        return None
+
+    def start_with(self, request):
+        return request.session.get('start_with') or 'term'
+
+    def get_context(self, request):
+        return {
+            'start_with': self.start_with(request)
+        }
 
 
 class FlashcardsView(StudyView):
     template_name = 'main/study/flashcards/flashcards.html'
 
     def get(self, request):
-        context = self._get_flashcards(request.GET['uuid'])
+        if request.GET.get('uuid'):
+            return super().get_uuid_and_redirect(request, '/flashcards')
+
+        context = self.get_flashcards(request)
         return render(request, self.template_name, context)
 
     def post(self, request):
-        super().post(request)
-        context = self._get_flashcards(request.GET['uuid'])
+        context = self.get_flashcards(request)
         return render(request, self.template_name, context)
 
-    def _get_flashcards(self, uuid):
-        deck = get_object_or_404(Deck, uuid=uuid)
+    def get_flashcards(self, request):
+        deck = get_object_or_404(Deck, uuid=request.session['uuid'])
         cards = Card.objects.filter(deck=deck)
         return {
             'cards': utils.serialize(cards),
-            'start_with': StudyView.start_with,
+            'start_with': self.start_with(request),
         }
 
+    def init_page_manager(self, request):
+        pass
 
-class LearnView(StudyView):
+
+class LearnView(PagingView, StudyView):
     template_name = 'main/study/learn/learn.html'
-    page_manager = None
 
-    def get(self, request):
+    def get(self, request, **kwargs):
+        if request.GET.get('uuid'):
+            return super().get_uuid_and_redirect(request, '/learn/1')
+
         if self.page_manager is None:
-            self._init_page_manager(request.GET['uuid'])
+            self.init_page_manager(request)
 
-        context = self._get_question(request.GET['q'])
+        context = super().get_context(request)
+        context.update(self.get_question(kwargs['page']))
         return render(request, self.template_name, context)
 
-    def post(self, request):
+    def post(self, request, **kwargs):
         super().post(request)
-        self._init_page_manager(request.GET['uuid'])
+        self.init_page_manager(request)
 
-        context = self._get_question(request.GET['q'])
+        context = super().get_context(request)
+        context.update(self.get_question(kwargs['page']))
         return render(request, self.template_name, context)
 
-    def _init_page_manager(self, uuid):
-        questions = testgen.generate_questions(uuid, StudyView.start_with)
-        self.page_manager = paging.Paginator(questions, 1)
+    def init_page_manager(self, request):
+        questions = testgen.generate_questions(request.session['uuid'], self.start_with(request))
+        self.page_manager = Paginator(questions, 1)
 
-    def _get_question(self, number):
+    def get_question(self, number):
         return {
             'page': self.page_manager.page(number),
-            'start_with': StudyView.start_with,
         }

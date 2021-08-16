@@ -1,5 +1,5 @@
 {% if page.has_previous %}
-    <a href="?uuid={{ request.GET.uuid }}&q={{ page.previous_page_number }}">
+    <a href="{{ page.previous_page_number }}">
         << Previous
     </a>
 {% endif %}
@@ -7,7 +7,7 @@
     |
 {% endif %}
 {% if page.has_next %}
-    <a href="?uuid={{ request.GET.uuid }}&q={{ page.next_page_number }}">
+    <a href="{{ page.next_page_number }}">
         Next >>
     </a>
 {% endif %}

@@ -9,7 +9,7 @@
             <!-- Edit deck details -->
             Deck name:
             <div class="input-group mb-3">
-                {% if request.GET.uuid %}
+                {% if request.session.uuid %}
                     <input type="text" id="name" placeholder="Enter a title." value="{{ deck.fields.name }}" required class="form-control">
                 {% else %}
                     <input type="text" id="name" placeholder="Enter a title." required class="form-control">
@@ -17,7 +17,7 @@
             </div>
             Description:
             <div class="input-group mb-3">
-                {% if request.GET.uuid %}
+                {% if request.session.uuid %}
                     <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control">{{ deck.fields.description }}</textarea>
                 {% else %}
                     <textarea id="description" placeholder="Write a short description..." style="resize: none" class="form-control"></textarea>
@@ -26,7 +26,7 @@
             <div class="text-center">
                 <button id='save-btn' type="button" class="btn btn-success">Save</button>
             </div>
-            <input type="hidden" id="uuid" value="{{ request.GET.uuid }}">
+            <input type="hidden" id="uuid" value="{{ request.session.uuid }}">
             <hr>
     
             <!-- Edit cards -->
