@@ -1,0 +1,41 @@
+{% extends "main/study/study.html" %}
+
+{% block lesson %}
+    {% with q=page.object_list.0 %}
+        {% autoescape off %}
+            <div class="m-2">
+                <h5>{{ q.question.text }}</h5>
+                {% if q.question.image %}
+                    {% with "media/"|add:q.question.image as image %}
+                        {% load static %}
+                        <img src="{% static image %}" alt="" class="zeusz-img">
+                    {% endwith %}
+                {% endif %}
+            </div>
+            <hr>
+            <div class="m-2">
+                {% for answer in q.answers %}
+                <div class="row mx-4">
+                    <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
+                        {{ answer.text }}
+                        {% if answer.image %}
+                            {% with "media/"|add:answer.image as image %}
+                                {% load static %}
+                                <img src="{% static image %}" alt="" class="zeusz-img">
+                            {% endwith %}
+                        {% endif %}
+                    </button>
+                </div>
+                    <br>
+                {% endfor %}
+            </div>
+        {% endautoescape %}
+    {% endwith %}
+
+    {% include "main/study/learn/learn_nav.html" %}
+{% endblock lesson %}
+
+{% block script %}
+    {% load static %}
+    <script src="{% static 'js/learn.js' %}"></script>
+{% endblock script %}

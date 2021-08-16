@@ -293,7 +293,19 @@ class EditorView(View):
                     file.name = name + '.' + ext
 
 
-class FlashcardsView(View):
+class StudyView(View):
+    """Base class for those view classes which handle the studying aspect of quizcards."""
+
+    # static class variable
+    # stores 'start_with with' setting
+    start_with = 'term'
+
+    def post(self, request):
+        """Handles 'start_with with' setting."""
+        StudyView.start_with = request.POST['start-with']
+
+
+class FlashcardsView(StudyView):
     template_name = 'main/study/flashcards/flashcards.html'
 
     def get(self, request):
@@ -301,6 +313,7 @@ class FlashcardsView(View):
         return render(request, self.template_name, context)
 
     def post(self, request):
+        super().post(request)
         context = self._get_flashcards(request.GET['uuid'])
         return render(request, self.template_name, context)
 
@@ -309,58 +322,34 @@ class FlashcardsView(View):
         cards = Card.objects.filter(deck=deck)
         return {
             'cards': utils.serialize(cards),
+            'start_with': StudyView.start_with,
         }
 
 
-class LearnView(View):
+class LearnView(StudyView):
     template_name = 'main/study/learn/learn.html'
     page_manager = None
 
     def get(self, request):
         if self.page_manager is None:
-            questions = testgen.generate_questions(request.GET['uuid'])
-            self.page_manager = paging.Paginator(questions, 1)
+            self._init_page_manager(request.GET['uuid'])
 
-        context = {
-            'page': self.page_manager.page(request.GET['q']),
-        }
-
+        context = self._get_question(request.GET['q'])
         return render(request, self.template_name, context)
 
     def post(self, request):
-        questions = testgen.generate_questions(request.GET['uuid'], request.POST['start'])
+        super().post(request)
+        self._init_page_manager(request.GET['uuid'])
+
+        context = self._get_question(request.GET['q'])
+        return render(request, self.template_name, context)
+
+    def _init_page_manager(self, uuid):
+        questions = testgen.generate_questions(uuid, StudyView.start_with)
         self.page_manager = paging.Paginator(questions, 1)
 
-        context = {
-            'page': self.page_manager.page(request.GET['q']),
+    def _get_question(self, number):
+        return {
+            'page': self.page_manager.page(number),
+            'start_with': StudyView.start_with,
         }
-
-        return render(request, self.template_name, context)
-
-
-class StudyView(View):
-    template_name = 'main/study/study.html'
-
-    def get(self, request):
-        deck = get_object_or_404(Deck, uuid=request.GET['uuid'])
-        cards = Card.objects.filter(deck=deck)
-        start_with = request.GET.get('start_with', 'term')
-
-        if request.GET['type'] == 'study':
-            context = {
-                'question': testgen.get(request, start_with),
-            }
-        elif request.GET['type'] == 'write':
-            context = {}
-        elif request.GET['type'] == 'test':
-            context = {}
-        else:
-            # default type: flashcards
-            context = {
-                'cards': utils.serialize(cards),
-            }
-
-        context.update({
-            'start_with': start_with,
-        })
-        return render(request, self.template_name, context)

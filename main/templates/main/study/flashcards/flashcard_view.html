@@ -1,0 +1,27 @@
+<div id="{{ card.pk }}" name="card" class="card col-6">
+    <div name="face" class="my-2"></div>
+
+    <div name="term" hidden>
+        {% autoescape off %} {{ card.fields.term }} {% endautoescape %}
+        {% if card.fields.term_image %}
+            {% with term_image=card.fields.term_image %}
+                {% load static %}
+                <img src="{% static term_image %}" alt="" class="zeusz-img">
+            {% endwith %}
+        {% endif %}
+    </div>
+
+    <div name="definition" hidden>
+        {% autoescape off %} {{ card.fields.definition }} {% endautoescape %}
+        {% if card.fields.definition_image %}
+            {% with definition_image=card.fields.definition_image %}
+                {% load static %}
+                <img src="{% static definition_image %}" alt="" class="zeusz-img">
+            {% endwith %}
+        {% endif %}
+    </div>
+
+    <div class="card-footer">
+        <button type="button" name="rotate-btn" class="btn">Click to rotate!</button>
+    </div>
+</div>

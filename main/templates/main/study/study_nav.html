@@ -14,26 +14,19 @@
         <a href="/learn/?uuid={{ request.GET.uuid }}&q=1" class="nav-link">Learn</a>
     {% endif %}
 
-    {% if request.path == "/write/" %}
-        <a class="nav-link active">Write</a>
-    {% else %}
-        <a href="/write/?uuid={{ request.GET.uuid }}" class="nav-link">Write</a>
-    {% endif %}
-
-    {% if request.path == "/test/" %}
-        <a class="nav-link active">Test</a>
-    {% else %}
-        <a href="/study/?uuid={{ request.GET.uuid }}" class="nav-link">Test</a>
-    {% endif %}
-
     <hr>
 
     Start with:
     <form method="post">
         {% csrf_token %}
-        <select name="start">
-            <option value="term">Term</option>
-            <option value="definition">Definition</option>
+        <select name="start-with">
+            {% if start_with == "term" %}
+                <option value="term" selected>Term</option>
+                <option value="definition">Definition</option>
+            {% else %}
+                <option value="term">Term</option>
+                <option value="definition" selected>Definition</option>
+            {% endif %}
         </select>
         <button type="submit" class="btn btn-outline-success p-1">Save</button>
     </form>

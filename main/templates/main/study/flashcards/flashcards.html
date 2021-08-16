@@ -1,0 +1,24 @@
+{% extends "main/study/study.html" %}
+
+{% block lesson %}
+    <div id="carousel" data-bs-interval="false" class="carousel slide col-10">
+        <div class="carousel-inner">
+            {% for card in cards %}
+                <div class="carousel-item">
+                    {% include "main/study/flashcards/flashcard_view.html" %}
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" data-bs-target="#carousel" data-bs-slide="prev" class="carousel-control-prev">
+            <span class="btn btn-dark"><</span>
+        </button>
+        <button type="button" data-bs-target="#carousel" data-bs-slide="next" class="carousel-control-next">
+            <span class="btn btn-dark">></span>
+        </button>
+    </div>
+{% endblock lesson %}
+
+{% block script %}
+    {% load static %}
+    <script src="{% static 'js/flashcards.js' %}"></script>
+{% endblock script %}
