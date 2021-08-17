@@ -16,5 +16,5 @@ urlpatterns = [
     path('editor/', EditorView.as_view()),
 
     path('flashcards/', FlashcardsView.as_view()),
-    path('learn/<page>', LearnView.as_view(), name='page'),
+    path('learn/', LearnView.as_view()),
 ]

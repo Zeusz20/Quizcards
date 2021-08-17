@@ -1,38 +1,20 @@
 {% extends "main/study/study.html" %}
 
 {% block lesson %}
-    {% with q=page.object_list.0 %}
-        {% autoescape off %}
-            <div class="m-2">
-                <h5>{{ q.question.text }}</h5>
-                {% if q.question.image %}
-                    {% with "media/"|add:q.question.image as image %}
-                        {% load static %}
-                        <img src="{% static image %}" alt="" class="zeusz-img">
-                    {% endwith %}
-                {% endif %}
-            </div>
-            <hr>
-            <div class="m-2">
-                {% for answer in q.answers %}
-                <div class="row mx-4">
-                    <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
-                        {{ answer.text }}
-                        {% if answer.image %}
-                            {% with "media/"|add:answer.image as image %}
-                                {% load static %}
-                                <img src="{% static image %}" alt="" class="zeusz-img">
-                            {% endwith %}
-                        {% endif %}
-                    </button>
-                </div>
-                    <br>
-                {% endfor %}
-            </div>
-        {% endautoescape %}
-    {% endwith %}
+    <div id="active-quiz"></div>
+    <button id="next" type="button" class="btn btn-primary m-1">Next >></button>
+    <br>
+    <a id="retry" href="/learn/" class="btn btn-primary m-1">Retry</a>
 
-    {% include "main/study/learn/learn_nav.html" %}
+    {% for quiz in questions %}
+        <div name="quiz" hidden>
+            {% autoescape off %}
+                {% include "main/study/learn/question_head.html" %}
+                <hr>
+                {% include "main/study/learn/question_body.html" %}
+            {% endautoescape %}
+        </div>
+    {% endfor %}
 {% endblock lesson %}
 
 {% block script %}

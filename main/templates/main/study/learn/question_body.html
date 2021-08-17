@@ -1,0 +1,15 @@
+<div class="m-2">
+    {% for answer in quiz.answers %}
+    <div class="row mx-4 my-2">
+        <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
+            {{ answer.text }}
+            {% if answer.image %}
+                {% with "media/"|add:answer.image as image %}
+                    {% load static %}
+                    <img src="{% static image %}" alt="" class="zeusz-img">
+                {% endwith %}
+            {% endif %}
+        </button>
+    </div>
+    {% endfor %}
+</div>

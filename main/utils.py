@@ -14,7 +14,7 @@ def user_exists(request):
     return request.session.get('user_id') is not None
 
 
-def clear_editor(request):
+def clear_editor_session(request):
     if request.session.get('uuid'):
         del request.session['uuid']
 

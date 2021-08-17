@@ -26,8 +26,6 @@ class IndexView(View):
     form = None
 
     def get(self, request):
-        utils.clear_editor(request)
-
         if request.GET.get('logout') is not None:
             request.session.clear()
 
@@ -36,6 +34,10 @@ class IndexView(View):
 
         if self.form is None:
             return redirect('/login')
+
+        if request.session.get('anonym') is None:
+            # create session for anonymous user
+            request.session['anonym'] = utils.random_string(32)
 
         context = {
             'form': self.form,
@@ -55,6 +57,7 @@ class IndexView(View):
         if auth.validate_login(request):
             user = User.objects.get(username=request.POST['username'])
             request.session['user_id'] = user.pk    # create session for user
+            return redirect('/user')
 
     def handle_registration(self, request):
         if auth.validate_registration(request):
@@ -65,7 +68,7 @@ class SearchView(PagingView):
     template_name = 'main/search.html'
 
     def get(self, request, **kwargs):
-        utils.clear_editor(request)
+        utils.clear_editor_session(request)
 
         if self.page_manager is None:
             self.init_page_manager(request)
@@ -100,7 +103,7 @@ class UserView(PagingView):
     site = None
 
     def get(self, request, **kwargs):
-        utils.clear_editor(request)
+        utils.clear_editor_session(request)
 
         if not utils.user_exists(request):
             return redirect('/')
@@ -157,9 +160,7 @@ class UserView(PagingView):
         return context
 
     def get_search_page(self, request, context, **kwargs):
-        if self.page_manager is None:
-            self.init_page_manager(request)
-
+        self.init_page_manager(request)
         context.update({
             'page': self.page_manager.page(kwargs['page']),
         })
@@ -335,7 +336,7 @@ class StudyView(View):
         """Handles 'start with' setting."""
         request.session['start_with'] = request.POST['start-with']
 
-    def get_uuid_and_redirect(self, request, redirect_to):
+    def save_uuid_and_redirect(self, request, redirect_to):
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
             return redirect(redirect_to)
@@ -344,7 +345,7 @@ class StudyView(View):
     def start_with(self, request):
         return request.session.get('start_with') or 'term'
 
-    def get_context(self, request):
+    def get_settings(self, request):
         return {
             'start_with': self.start_with(request)
         }
@@ -355,7 +356,7 @@ class FlashcardsView(StudyView):
 
     def get(self, request):
         if request.GET.get('uuid'):
-            return super().get_uuid_and_redirect(request, '/flashcards')
+            return super().save_uuid_and_redirect(request, '/flashcards')
 
         context = self.get_flashcards(request)
         return render(request, self.template_name, context)
@@ -376,33 +377,24 @@ class FlashcardsView(StudyView):
         pass
 
 
-class LearnView(PagingView, StudyView):
+class LearnView(StudyView):
     template_name = 'main/study/learn/learn.html'
 
-    def get(self, request, **kwargs):
+    def get(self, request):
         if request.GET.get('uuid'):
-            return super().get_uuid_and_redirect(request, '/learn/1')
+            return super().save_uuid_and_redirect(request, '/learn')
 
-        if self.page_manager is None:
-            self.init_page_manager(request)
-
-        context = super().get_context(request)
-        context.update(self.get_question(kwargs['page']))
+        context = super().get_settings(request)
+        context.update(self.get_questions(request))
         return render(request, self.template_name, context)
 
-    def post(self, request, **kwargs):
+    def post(self, request):
         super().post(request)
-        self.init_page_manager(request)
-
-        context = super().get_context(request)
-        context.update(self.get_question(kwargs['page']))
+        context = super().get_settings(request)
+        context.update(self.get_questions(request))
         return render(request, self.template_name, context)
 
-    def init_page_manager(self, request):
-        questions = testgen.generate_questions(request.session['uuid'], self.start_with(request))
-        self.page_manager = Paginator(questions, 1)
-
-    def get_question(self, number):
+    def get_questions(self, request):
         return {
-            'page': self.page_manager.page(number),
+            'questions': testgen.generate_questions(request.session['uuid'], self.start_with(request)),
         }
