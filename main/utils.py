@@ -14,6 +14,33 @@ def user_exists(request):
     return request.session.get('user_id') is not None
 
 
+def clear_session(view, request):
+    from .views import CheckoutView, EditorView, IndexView, SearchView, StudyView, UserView
+
+    allowed_keys = ['user_id']
+
+    if isinstance(view, UserView):
+        allowed_keys += ['local_search']
+    elif isinstance(view, EditorView):
+        allowed_keys += ['uuid']
+    elif isinstance(view, SearchView):
+        allowed_keys += ['anonym', 'global_search']
+    elif isinstance(view, StudyView):
+        allowed_keys += ['anonym', 'uuid']
+    elif isinstance(view, CheckoutView):
+        allowed_keys += ['checkout']
+    elif isinstance(view, IndexView):
+        allowed_keys = ['anonym']   # only anonymous users
+
+    keys_to_remove = list()
+    for key in request.session.keys():
+        if key not in allowed_keys:
+            keys_to_remove.append(key)
+
+    for key in keys_to_remove:
+        del request.session[key]
+
+
 def clear_editor_session(request):
     if request.session.get('uuid'):
         del request.session['uuid']

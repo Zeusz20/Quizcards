@@ -1,15 +1,28 @@
-<div class="card">
+<div class="card mb-2">
     <div class="card-body">
         <h5 class="card-title">{{ deck.name }}</h5>
         <p class="card-text">{{ deck.description }}</p>
         <p class="card-text">
+            {% if request.session.checkout or request.session.global_search %}
+                <small class="text-muted">
+                    Created by:
+                    <a href="/checkout/?checkout={{ deck.user.username }}" class="zeusz-unstyled">{{ deck.user.username }}</a>
+                </small>
+                <br>
+            {% endif %}
             <small class="text-muted">Created on: {{ deck.date_created }}</small>
             <br>
             <small class="text-muted">Last modified: {{ deck.last_modified }}</small>
         </p>
-        <div class="card-footer bg-transparent ps-0">
-            <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary">Study</a>
+    </div>
+
+    <div class="card-footer bg-transparent mx-2 ps-0">
+        <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary">Study</a>
+
+        {% if not request.session.checkout and not request.session.global_search %}
             <a href="/editor/?uuid={{ deck.uuid }}" class="btn btn-success">Edit</a>
+
+            <!-- Delete harmonica -->
             <button type="button" class="btn btn-danger"
                     data-bs-toggle="collapse" data-bs-target="#confirm-{{ deck.pk }}"
                     aria-controls="confirm-{{ deck.pk }}" aria-expanded="false">
@@ -27,6 +40,7 @@
                     </button>
                 </form>
             </div>
-        </div>
+            <!-- Delete harmonica END -->
+        {% endif %}
     </div>
 </div>

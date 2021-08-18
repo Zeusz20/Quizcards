@@ -12,7 +12,6 @@
         </div>
     </form>
 </div>
-<br>
 
 <div class="mb-1">
     {% include "main/messages.html" %}
@@ -21,27 +20,9 @@
         <p class="text-muted">No decks.</p>
     {% else %}
         {% for deck in page.object_list %}
-            {% include "main/user/deck_view.html" %}
+            {% include "main/deck_view.html" %}
         {% endfor %}
 
-        <div id="paging" class="my-2">
-            {% if page.has_previous %}
-                {% if request.session.local_search %}
-                    <a href="/user/search/{{ page.previous_page_number }}"><< Previous</a>
-                {% else %}
-                    <a href="/user/{{ page.previous_page_number }}"><< Previous</a>
-                {% endif %}
-            {% endif %}
-            {% if page.has_previous or page.has_next %}
-                |
-            {% endif %}
-            {% if page.has_next %}
-                {% if request.session.local_search %}
-                    <a href="/user/search/{{ page.next_page_number }}">Next >></a>
-                {% else %}
-                    <a href="/user/{{ page.next_page_number }}">Next >></a>
-                {% endif %}
-            {% endif %}
-        </div>
+        {% include "main/user/user_nav.html" %}
     {% endif %}
 </div>

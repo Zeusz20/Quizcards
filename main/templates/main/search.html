@@ -1,27 +1,12 @@
-{% extends 'main/base.html' %}
+{% extends "main/base.html" %}
 
 {% block content %}
-    {% include 'main/header.html' %}
+    {% include "main/header.html" %}
 
     <div class="col-10">
         {% if page %}
             {% for deck in page.object_list %}
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ deck.name }}</h5>
-                        <p class="card-text">{{ deck.description }}</p>
-                        <p class="card-text">
-                            <small class="text-muted">Created by: {{ deck.user.username }}</small>
-                            <br>
-                            <small class="text-muted">Created on: {{ deck.date_created }}</small>
-                            <br>
-                            <small class="text-muted">Last modified: {{ deck.last_modified }}</small>
-                        </p>
-                    </div>
-                    <div class="card-footer bg-transparent ps-0">
-                        <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary mx-2">Study</a>
-                    </div>
-                </div>
+                {% include "main/deck_view.html" %}
             {% endfor %}
 
             {% if page.has_previous %}

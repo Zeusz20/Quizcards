@@ -3,7 +3,7 @@
 {% block content %}
     {% include "main/header.html" %}
     <div class="col-11">
-        {% if request.path == "/user/manage/" %}
+        {% if site == "manage" %}
             {% include "main/user/user_manage.html" %}
         {% else %}
             <h3>Welcome {{ user.username }}!</h3>

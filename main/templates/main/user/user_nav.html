@@ -1,0 +1,25 @@
+<div class="my-2">
+    {% if page.has_previous %}
+        {% if request.session.local_search %}
+            <a href="/user/search/{{ page.previous_page_number }}"><< Previous</a>
+        {% elif request.session.checkout %}
+            <a href="/checkout/{{ page.previous_page_number }}"><< Previous</a>
+        {% else %}
+            <a href="/user/{{ page.previous_page_number }}"><< Previous</a>
+        {% endif %}
+    {% endif %}
+
+    {% if page.has_previous or page.has_next %}
+        |
+    {% endif %}
+
+    {% if page.has_next %}
+        {% if request.session.local_search %}
+            <a href="/user/search/{{ page.next_page_number }}">Next >></a>
+        {% elif request.session.checkout %}
+            <a href="/checkout/{{ page.next_page_number }}">Next >></a>
+        {% else %}
+            <a href="/user/{{ page.next_page_number }}">Next >></a>
+        {% endif %}
+    {% endif %}
+</div>

@@ -1,0 +1,14 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+    {% include "main/header.html" %}
+    <div class="col-11">
+        <h5>{{ request.session.checkout }}'s decks</h5>
+
+        {% for deck in page.object_list %}
+            {% include "main/deck_view.html" %}
+        {% endfor %}
+
+        {% include "main/user/user_nav.html" %}
+    </div>
+{% endblock content %}

@@ -27,7 +27,7 @@ class IndexView(View):
 
     def get(self, request):
         if request.GET.get('logout') is not None:
-            request.session.clear()
+            request.session.flush()
 
         if utils.user_exists(request):
             return redirect('/user')
@@ -68,7 +68,7 @@ class SearchView(PagingView):
     template_name = 'main/search.html'
 
     def get(self, request, **kwargs):
-        utils.clear_editor_session(request)
+        utils.clear_session(self, request)
 
         if self.page_manager is None:
             self.init_page_manager(request)
@@ -103,7 +103,7 @@ class UserView(PagingView):
     site = None
 
     def get(self, request, **kwargs):
-        utils.clear_editor_session(request)
+        utils.clear_session(self, request)
 
         if not utils.user_exists(request):
             return redirect('/')
@@ -111,6 +111,7 @@ class UserView(PagingView):
         user = User.objects.get(pk=request.session['user_id'])
         context = {
             'user': user,
+            'site': self.site,
         }
 
         # fresh login tasks
@@ -178,12 +179,37 @@ class UserView(PagingView):
             messages.success(request, 'Password changed successfully.')
 
 
+class CheckoutView(PagingView):
+    template_name = 'main/user/checkout.html'
+
+    def get(self, request, **kwargs):
+        if not utils.user_exists(request):
+            return redirect('/')
+
+        if request.GET.get('checkout'):
+            request.session['checkout'] = request.GET['checkout']
+            return redirect('/checkout/1')
+
+        self.init_page_manager(request)
+        context = {
+            'page': self.page_manager.page(kwargs['page'])
+        }
+        return render(request, self.template_name, context)
+
+    def init_page_manager(self, request):
+        checkout_user = get_object_or_404(User, username=request.session['checkout'])
+        decks = Deck.objects.filter(user=checkout_user)
+        self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
+
+
 class EditorView(View):
     template_name = 'main/editor/editor.html'
 
     def get(self, request):
         if not utils.user_exists(request):
             return redirect('/')
+
+        utils.clear_session(self, request)
 
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
@@ -332,6 +358,9 @@ class EditorView(View):
 class StudyView(View):
     """Base class for those view classes which handle the studying aspect of quizcards."""
 
+    def get(self, request):
+        utils.clear_session(self, request)
+
     def post(self, request):
         """Handles 'start with' setting."""
         request.session['start_with'] = request.POST['start-with']
@@ -355,6 +384,8 @@ class FlashcardsView(StudyView):
     template_name = 'main/study/flashcards/flashcards.html'
 
     def get(self, request):
+        super().get(request)
+
         if request.GET.get('uuid'):
             return super().save_uuid_and_redirect(request, '/flashcards')
 
@@ -362,6 +393,7 @@ class FlashcardsView(StudyView):
         return render(request, self.template_name, context)
 
     def post(self, request):
+        super().post(request)
         context = self.get_flashcards(request)
         return render(request, self.template_name, context)
 
@@ -373,14 +405,13 @@ class FlashcardsView(StudyView):
             'start_with': self.start_with(request),
         }
 
-    def init_page_manager(self, request):
-        pass
-
 
 class LearnView(StudyView):
     template_name = 'main/study/learn/learn.html'
 
     def get(self, request):
+        super().get(request)
+
         if request.GET.get('uuid'):
             return super().save_uuid_and_redirect(request, '/learn')
 

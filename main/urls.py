@@ -12,6 +12,8 @@ urlpatterns = [
     path('user/<page>', UserView.as_view(), name='page'),
     path('user/search/<page>', UserView.as_view(site='search'), name='page'),
     path('user/manage/', UserView.as_view(site='manage')),
+    path('checkout/', CheckoutView.as_view()),
+    path('checkout/<page>', CheckoutView.as_view(), name='page'),
 
     path('editor/', EditorView.as_view()),
 
