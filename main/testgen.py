@@ -1,4 +1,3 @@
-from os.path import basename
 from random import sample, shuffle
 from .models import Card, Deck
 
@@ -15,12 +14,12 @@ def generate_questions(uuid, start_with):
         question = {
             'question': {
                 'text': card.__dict__[start_with],
-                'image': basename(card.__dict__[start_with + '_image']),
+                'image': getattr(Card, start_with + '_image_url')(card),
             },
             'answers': [
                 {
                     'text': card.__dict__[opposite_face],
-                    'image': basename(card.__dict__[opposite_face + '_image']),
+                    'image': getattr(Card, opposite_face + '_image_url')(card),
                     'correct': True,
                 },
             ]
@@ -34,7 +33,7 @@ def generate_questions(uuid, start_with):
         for wrong in wrong_answers:
             question['answers'].append({
                 'text': wrong.__dict__[opposite_face],
-                'image': basename(wrong.__dict__[opposite_face + '_image']),
+                'image': getattr(Card, opposite_face + '_image_url')(wrong),
                 'correct': False,
             })
 

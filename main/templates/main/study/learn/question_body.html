@@ -4,7 +4,7 @@
         <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
             {{ answer.text }}
             {% if answer.image %}
-                {% with "media/"|add:answer.image as image %}
+                {% with answer.image as image %}
                     {% load static %}
                     <img src="{% static image %}" alt="" class="zeusz-img">
                 {% endwith %}

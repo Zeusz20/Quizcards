@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db.models import *
+from .utils import get_image_url
 
 LENGTH = 512
 
@@ -27,3 +28,9 @@ class Card(Model):
     term_image = FileField(upload_to=settings.MEDIA_ROOT, null=True, blank=True)
     definition = CharField(max_length=LENGTH)
     definition_image = FileField(upload_to=settings.MEDIA_ROOT, null=True, blank=True)
+
+    def term_image_url(self):
+        return get_image_url(self.term_image.name) if self.term_image else ''
+
+    def definition_image_url(self):
+        return get_image_url(self.definition_image.name) if self.definition_image else ''

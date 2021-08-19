@@ -1,9 +1,3 @@
-from django.core.serializers import serialize as django_serialize
-from django.db.models import Q
-from json import loads as json_loads
-from os.path import basename
-from .models import Deck
-
 USER_VIEW_PAGE_SIZE = 7
 SEARCH_VIEW_PAGE_SIZE = 10
 
@@ -18,19 +12,12 @@ def session_clean_up(view, request):
             del request.session[key]
 
 
-def serialize(query):
-    is_iterable = hasattr(query, '__iter__')
-    queryset = query if is_iterable else [query]
-    raw = django_serialize('json', queryset)
-    serialized = json_loads(raw)
+def get_image_url(image_path):
+    from django.conf import settings
+    from os.path import basename, join
 
-    # remap card image names so client cannot see full server path
-    for model in serialized:
-        if model['model'] == 'main.card':
-            model['fields']['term_image'] = basename(model['fields']['term_image'])
-            model['fields']['definition_image'] = basename(model['fields']['definition_image'])
-
-    return serialized if is_iterable else serialized.pop()
+    root = basename(settings.MEDIA_ROOT)
+    return join(root, basename(image_path))
 
 
 def random_string(length):
@@ -49,6 +36,9 @@ def validate_datetime(day, hour, minute):
 
 
 def get_decks_from_query(user=None, query='', local=False):
+    from django.db.models import Q
+    from .models import Deck
+
     if user is None:
         # non logged in user's global search
         return Deck.objects.filter(

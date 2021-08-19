@@ -42,10 +42,8 @@ class IndexView(BaseView):
     def get(self, request):
         if request.GET.get('logout') is not None:
             request.session.flush()
-
         if utils.user_exists(request):
             return redirect('/user')
-
         if self.form is None:
             return redirect('/login')
 
@@ -116,7 +114,7 @@ class UserView(PagingView):
             user.save()
             return redirect('/user/1')
 
-        kwargs['user'] = user
+        kwargs['user'] = user   # save user for context
         return super().render(request, **kwargs)
 
     def post(self, request, **kwargs):
@@ -221,7 +219,7 @@ class EditorView(BaseView):
             user = User.objects.get(pk=request.session['user_id'])
             deck = Deck.objects.get(user=user, uuid=request.session['uuid'])  # check if user owns the deck
             cards = Card.objects.filter(deck=deck)
-            return self.create_context(deck=utils.serialize(deck), cards=utils.serialize(cards))
+            return self.create_context(deck=deck, cards=cards)
         else:
             return self.create_context(cards=[{}])   # empty card list with an empty card
 
@@ -370,7 +368,7 @@ class FlashcardsView(StudyView):
         deck = Deck.objects.get(uuid=request.session['uuid'])
         cards = Card.objects.filter(deck=deck)
         context = super().get_context(request)
-        context.update(cards=utils.serialize(cards))
+        context.update(cards=cards)
         return context
 
 

@@ -89,6 +89,11 @@ DATABASES = {
     }
 }
 
+DATABASE_LOCKS_STATUS_FILE = None
+DATABASE_LOCKS_ENABLED = True
+DATABASE_LOCKS_DEFAULT_TTL = 10
+DATABASE_LOCKS_DEFAULT_TTL_RENEW = 2
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
