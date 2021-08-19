@@ -129,7 +129,6 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     path.join(BASE_DIR, 'static'),
-    MEDIA_ROOT,
 ]
 
 # Default primary key field type

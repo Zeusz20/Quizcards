@@ -1,11 +1,10 @@
-from django.shortcuts import get_object_or_404
 from os.path import basename
 from random import sample, shuffle
 from .models import Card, Deck
 
 
 def generate_questions(uuid, start_with):
-    deck = get_object_or_404(Deck, uuid=uuid)
+    deck = Deck.objects.get(uuid=uuid)
     cards = list(Card.objects.filter(deck=deck))
 
     questions = list()

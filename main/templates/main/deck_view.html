@@ -3,7 +3,7 @@
         <h5 class="card-title">{{ deck.name }}</h5>
         <p class="card-text">{{ deck.description }}</p>
         <p class="card-text">
-            {% if request.session.checkout or request.session.global_search %}
+            {% if request.session.global_search %}
                 <small class="text-muted">
                     Created by:
                     <a href="/checkout/?checkout={{ deck.user.username }}" class="zeusz-unstyled">{{ deck.user.username }}</a>

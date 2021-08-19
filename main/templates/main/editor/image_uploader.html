@@ -1,8 +1,10 @@
 <input type="file" name="{{ type }}-image" accept="image/png, image/jpeg" class="mb-2">
 
-{% if image %}
-    {% load static %}
-    <img name="{{ type }}-preview" src="{% static image %}" alt="" loading="lazy" class="zeusz-img">
+{% if image_path %}
+    {% with "media/"|add:image_path as image %}
+        {% load static %}
+        <img name="{{ type }}-preview" src="{% static image %}" alt="" loading="lazy" class="zeusz-img">
+    {% endwith %}
 {% else %}
     <img name="{{ type }}-preview" src="" alt="" loading="lazy" class="zeusz-img">
 {% endif %}

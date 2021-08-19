@@ -1,9 +1,8 @@
 {% extends "main/base.html" %}
 
 {% block content %}
-    {% include "main/header.html" %}
     <div class="col-11">
-        <h5>{{ request.session.checkout }}'s decks</h5>
+        <h3>{{ request.session.checkout }}'s decks</h3>
 
         {% for deck in page.object_list %}
             {% include "main/deck_view.html" %}

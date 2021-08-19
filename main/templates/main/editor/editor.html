@@ -1,8 +1,6 @@
 {% extends "main/base.html" %}
 
 {% block content %}
-    {% include "main/header.html" %}
-
     <div class="col-6">
         <form id="editor" method="post" enctype="multipart/form-data">
             {% csrf_token %}
