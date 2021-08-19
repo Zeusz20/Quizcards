@@ -1,12 +1,12 @@
-import json
-
-import django.shortcuts
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.shortcuts import redirect
+from django.db.transaction import atomic
+from django.shortcuts import redirect, render as django_render
 from django.views.generic import View
 from abc import ABCMeta, abstractmethod
+from database_locks import locked
 from datetime import date
+from os.path import basename
 from . import authentication as auth, testgen, utils
 from .models import *
 
@@ -17,7 +17,7 @@ class BaseView(View, metaclass=ABCMeta):
 
     def render(self, request, **kwargs):
         context = self.get_context(request, **kwargs)
-        return django.shortcuts.render(request, self.template_name, context)
+        return django_render(request, self.template_name, context)
 
     @abstractmethod
     def get_context(self, request, **kwargs):
@@ -150,6 +150,8 @@ class UserView(PagingView):
         decks = utils.get_decks_from_query(user, query, local=True)
         self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
 
+    @atomic
+    @locked
     def handle_deck_delete(self, request):
         deck_id = request.POST['delete']
         deck = Deck.objects.get(pk=deck_id)
@@ -200,7 +202,8 @@ class EditorView(BaseView):
         return super().render(request)
 
     def post(self, request):
-        data = json.loads(request.POST['deck'])
+        from json import loads
+        data = loads(request.POST['deck'])
         update = data.get('uuid')   # if exists a uuid in POST we update
 
         self._make_unique(request.FILES)
@@ -222,6 +225,8 @@ class EditorView(BaseView):
         else:
             return self.create_context(cards=[{}])   # empty card list with an empty card
 
+    @atomic
+    @locked
     def save_deck(self, request, data):
         from uuid import uuid4
 
@@ -257,6 +262,8 @@ class EditorView(BaseView):
                 definition_image=definition_image
             ).save()
 
+    @atomic
+    @locked
     def update_deck(self, request, data):
         deck = Deck.objects.get(uuid=data['uuid'])
         data['last_modified'] = date.today()
