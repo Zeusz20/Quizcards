@@ -43,7 +43,7 @@ def get_decks_from_query(user=None, query='', local=False):
         # non logged in user's global search
         return Deck.objects.filter(
             Q(name__icontains=query) | Q(description__icontains=query)
-        ).order_by
+        )
 
     if query == '':
         # logged in user's deck pagination
