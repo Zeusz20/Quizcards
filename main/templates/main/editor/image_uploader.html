@@ -1,10 +1,12 @@
-<input type="file" name="{{ type }}-image" accept="image/png, image/jpeg" class="mb-2">
+<div class="mt-2">
+    <input type="file" name="{{ type }}-image" accept="image/png, image/jpeg" class="mb-2">
 
-{% if image %}
-    {% load static %}
-    <img name="{{ type }}-preview" src="{% static image %}" alt="" loading="lazy" class="zeusz-img">
-{% else %}
-    <img name="{{ type }}-preview" src="" alt="" loading="lazy" class="zeusz-img">
-{% endif %}
+    {% if image %}
+        {% load static %}
+        <img name="{{ type }}-preview" src="{% static image %}" alt="" loading="lazy" class="zeusz-img">
+    {% else %}
+        <img name="{{ type }}-preview" src="" alt="" loading="lazy" class="zeusz-img">
+    {% endif %}
 
-<button type="button" name="del-{{ type }}-img" style="width: 2em" class="btn-danger">X</button>
+    <button type="button" name="del-{{ type }}-img" style="width: 2em" class="btn-danger">X</button>
+</div>

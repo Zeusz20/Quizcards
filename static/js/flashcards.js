@@ -19,25 +19,31 @@ function getCard(child) {
 function bindRotation() {
     document.getElementsByName('rotate-btn').forEach(button => {
         // TODO: 3d rotation
-        Node.prototype.flip = false     // saves rotation for each card
+        Node.prototype.flipped = false     // saves rotation for each card
 
         button.onclick = () => {
-            button.flip = !button.flip
-            fillCardFace(getCard(button), button.flip)
+            button.flipped = !button.flipped
+            fillCardFace(getCard(button), button.flipped)
         }
     })
 }
 
-function fillCardFace(card, flip=false) {
-    const face = getCardElement(card, 'face')
+function fillCardFace(card, flipped=false) {
     const term = getCardElement(card, 'term')
     const definition = getCardElement(card, 'definition')
 
-    if(startWith() == 'term') {
-        face.innerHTML = flip ? definition.innerHTML : term.innerHTML
+    // conditions that need to be fulfilled in order to display the card's term, otherwise display the card's definition
+    let termDisplayConditions = (startWith() == 'term' && !flipped) || (startWith() == 'definition' && flipped)
+
+    if(termDisplayConditions) {
+        // display term
+        shortcuts.showElement(term)
+        shortcuts.hideElement(definition)
     }
     else {
-        face.innerHTML = flip ? term.innerHTML : definition.innerHTML
+        // display definition
+        shortcuts.showElement(definition)
+        shortcuts.hideElement(term)
     }
 }
 

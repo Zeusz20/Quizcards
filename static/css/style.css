@@ -1,3 +1,7 @@
+.hidden {
+    display: none;
+}
+
 .zeusz-unstyled {
     color: black;
     text-decoration: none;

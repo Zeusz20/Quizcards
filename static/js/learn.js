@@ -5,14 +5,16 @@ init()
 
 function init() {
     const nextButton = document.getElementById('next')
-    nextButton.style.visibility = 'hidden'
+    shortcuts.hideElement(nextButton)
+    
     nextButton.onclick = () => {
-        nextButton.style.visibility = 'hidden'
+        shortcuts.hideElement(nextButton)
         showNextQuestion()
     }
 
     // hide retry button
-    document.getElementById('retry').style.visibility = 'hidden'
+    const retryButton = document.getElementById('retry')
+    shortcuts.hideElement(retryButton)
 
     showNextQuestion()
 }
@@ -22,10 +24,15 @@ function showNextQuestion() {
     activeId++
 
     const quizes = Array.from(document.getElementsByName('quiz'))
-    const active = document.getElementById('active-quiz')
-
-    active.innerHTML = quizes[activeId].innerHTML
-    bind(active)
+    for(let i = 0; i < quizes.length; i++) {
+        if(i == activeId) {
+            shortcuts.showElement(quizes[i])
+            bind(quizes[i])
+        }
+        else {
+            shortcuts.hideElement(quizes[i])
+        }
+    }
 }
 
 /* displays "next button" of "retry button" depending on quiz progression */
@@ -34,10 +41,10 @@ function showNav() {
     const retryButton = document.getElementById('retry')
     
     if(activeId + 1 < document.getElementsByName('quiz').length) {
-        nextButton.style.visibility = 'visible'
+        shortcuts.showElement(nextButton)
     }
     else {
-        retryButton.style.visibility = 'visible'
+        shortcuts.showElement(retryButton)
     }
 }
 

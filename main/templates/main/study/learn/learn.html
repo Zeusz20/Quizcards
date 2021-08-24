@@ -1,13 +1,8 @@
 {% extends "main/study/study.html" %}
 
 {% block lesson %}
-    <div id="active-quiz"></div>
-    <button id="next" type="button" class="btn btn-primary m-1">Next >></button>
-    <br>
-    <a id="retry" href="/learn/" class="btn btn-primary m-1">Retry</a>
-
     {% for quiz in questions %}
-        <div name="quiz" hidden>
+        <div name="quiz" class="hidden">
             {% autoescape off %}
                 {% include "main/study/learn/question_head.html" %}
                 <hr>
@@ -15,6 +10,9 @@
             {% endautoescape %}
         </div>
     {% endfor %}
+
+    <button id="next" type="button" class="btn btn-primary m-1">Next >></button>
+    <a id="retry" href="/learn/" class="btn btn-primary m-1">Retry</a>
 {% endblock lesson %}
 
 {% block script %}

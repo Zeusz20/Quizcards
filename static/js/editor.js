@@ -152,13 +152,27 @@ function hideOrShowImageControls(imageName, previewName, deleteBtnName) {
         }
     })
 
-    // enable/disable preview and delete button depending on choosen image
-    imageFormattingControls.forEach(pair => {
-        let visibility = (pair.controls.preview.getAttribute('src') === '') ? 'hidden' : 'visible'
-        Object.values(pair.controls).forEach(element => element.style.visibility = visibility)
+    // enable/disable preview and delete button, depending on if image exists
+    imageFormattingControls.forEach(formatting => {
+        let imageExists = (formatting.controls.preview.getAttribute('src') !== '')
 
-        // invert visibility for input
-        pair.input.style.visibility = (visibility == 'hidden') ? 'visible' : 'hidden'
+        Object.values(formatting.controls).forEach(ctrl => {
+            // hide/show the formatting controls (image preview and delete button)
+            if(imageExists) {
+                shortcuts.showElement(ctrl)
+            }
+            else {
+                shortcuts.hideElement(ctrl)
+            }
+        })
+
+        // invert visibility for image input
+        if(imageExists) {
+            shortcuts.hideElement(formatting.input)
+        }
+        else {
+            shortcuts.showElement(formatting.input)
+        }
     })
 }
 
