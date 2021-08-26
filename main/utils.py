@@ -2,13 +2,25 @@ USER_VIEW_PAGE_SIZE = 7
 SEARCH_VIEW_PAGE_SIZE = 10
 
 
-def user_exists(request):
-    return request.session.get('user_id') is not None
+def login_required(get_request):
+    """Redirect unauthenticated user to home page if trying to access pages with authentication requirement."""
+
+    from django.shortcuts import redirect
+
+    def decorator(view, request, path, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('/')
+        return get_request(view, request, **kwargs)
+
+    return decorator
 
 
 def session_clean_up(view, request):
+    from django.contrib.auth import BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY
+    allowed_keys = view.session_keys + (BACKEND_SESSION_KEY, HASH_SESSION_KEY, SESSION_KEY)
+
     for key in dict(request.session).keys():
-        if key not in view.session_keys:
+        if key not in allowed_keys:
             del request.session[key]
 
 

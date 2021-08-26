@@ -1,6 +1,6 @@
 <nav class="navbar mb-2 zeusz-nav">
     <a href="/" class="h3 zeusz-unstyled">Quizcards</a>
-    {% if request.session.user_id %}
+    {% if request.user.is_authenticated %}
         <a href="/user/">Home</a>
         <a href="/user/manage/">Profile</a>
         <a href="/?logout=">Log out</a>

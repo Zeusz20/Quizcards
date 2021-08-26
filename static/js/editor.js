@@ -259,12 +259,7 @@ function getImage(node, type) {
     return getFilename(image.getAttribute('src'))
 }
 
-/* copied from: https://stackoverflow.com/questions/857618/javascript-how-to-extract-filename-from-a-file-input-control */
 function getFilename(path) {
-    let startIndex = (path.indexOf('\\') >= 0 ? path.lastIndexOf('\\') : path.lastIndexOf('/'))
-    let filename = path.substring(startIndex)
-    if(filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
-        filename = filename.substring(1)
-    }
-    return filename
+    // found a much more elegant way myself
+    return path.replace(/.*(\/|\\)/g, '')
 }

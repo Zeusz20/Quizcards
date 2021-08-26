@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, SESSION_KEY
+from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator
 from django.db.transaction import atomic
 from django.shortcuts import redirect, render as django_render
@@ -41,10 +41,13 @@ class IndexView(BaseView):
     form = None
 
     def get(self, request):
+        from .cleaner import file_cleanup
+        file_cleanup()
+
         if request.GET.get('logout') is not None:
             logout(request)
 
-        if utils.user_exists(request):
+        if request.user.is_authenticated:
             return redirect('/user')
         if self.site is None:
             return redirect('/login')
@@ -67,10 +70,10 @@ class IndexView(BaseView):
 
     def handle_login(self, request):
         user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
+        request.user = user
 
         if user is not None:
             login(request, user)
-            request.session['user_id'] = request.session.pop(SESSION_KEY)
             return redirect('/user')
         else:
             messages.error(request, _('Wrong username or password.'))
@@ -90,7 +93,7 @@ class IndexView(BaseView):
 
 class SearchView(PagingView):
     template_name = 'main/search.html'
-    session_keys = ('global_search', 'user_id')
+    session_keys = ('global_search', )
 
     def get(self, request, **kwargs):
         utils.session_clean_up(self, request)
@@ -105,49 +108,42 @@ class SearchView(PagingView):
         return self._create_context(page=self.page_manager.page(kwargs['page']))
 
     def init_page_manager(self, request):
-        try:
-            user = User.objects.get(pk=request.session.get('user_id'))
-        except User.DoesNotExist:
-            user = None
-
+        user = request.user if isinstance(request.user, User) else None
         decks = utils.get_decks_from_query(user, request.session['global_search'], local=False)
         self.page_manager = Paginator(decks, utils.SEARCH_VIEW_PAGE_SIZE)
 
 
 class UserView(PagingView):
     template_name = 'main/user/user.html'
-    session_keys = ('local_search', 'user_id')
+    session_keys = ('local_search', )
     site = None
 
+    @utils.login_required
     def get(self, request, **kwargs):
-        if not utils.user_exists(request):
-            return redirect('/')
-
         utils.session_clean_up(self, request)
-        user = User.objects.get(pk=request.session['user_id'])
 
         # fresh login tasks
         if self.site is None and kwargs.get('page') is None:
-            user.last_login = date.today()
-            user.save()
+            request.user.save()     # update last login date
             return redirect('/user/1')
 
-        kwargs['user'] = user   # save user for context
         return super().render(request, **kwargs)
 
     def post(self, request, **kwargs):
         if request.POST.get('search'):
             request.session['local_search'] = request.POST['query'].strip()
             return redirect('/user/search/1')
+
         if request.POST.get('delete'):
             self.handle_deck_delete(request)
             return redirect('/user')
+
         if request.POST.get('change'):
             self.manage_user(request)   # handle email or password change
             return redirect('/user/manage/')
 
     def get_context(self, request, **kwargs):
-        context = self._create_context(user=kwargs['user'], site=self.site)
+        context = self._create_context(user=request.user, site=self.site)
 
         if self.site != 'search':
             # delete possible previous local search session
@@ -155,9 +151,8 @@ class UserView(PagingView):
                 del request.session['local_search']
 
         if self.site == 'manage':
-            user = User.objects.get(pk=request.session['user_id'])
-            password_form = forms.PasswordChangeForm(user)
-            email_form = forms.EmailChangeForm(user)
+            password_form = forms.PasswordChangeForm(request.user)
+            email_form = forms.EmailChangeForm(request.user)
             context.update(password_form=password_form, email_form=email_form)
         else:
             if kwargs.get('page'):
@@ -167,9 +162,8 @@ class UserView(PagingView):
         return context
 
     def init_page_manager(self, request):
-        user = User.objects.get(pk=request.session['user_id'])
         query = request.session.get('local_search') or ''
-        decks = utils.get_decks_from_query(user, query, local=True)
+        decks = utils.get_decks_from_query(request.user, query, local=True)
         self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
 
     @atomic
@@ -184,14 +178,12 @@ class UserView(PagingView):
     def manage_user(self, request):
         """Handles email and password changes."""
 
-        user = User.objects.select_for_update().get(pk=request.session['user_id'])
+        user = User.objects.select_for_update().get(pk=request.user.pk)
 
         if request.POST['change'] == 'email':
-            # init email change form
             form = forms.EmailChangeForm(user, request.POST)
             msg = _('E-mail changed successfully.')
         else:
-            # init password change form
             form = forms.PasswordChangeForm(user, request.POST)
             msg = _('Password changed successfully.')
 
@@ -204,7 +196,7 @@ class UserView(PagingView):
 
 class CheckoutView(PagingView):
     template_name = 'main/user/checkout.html'
-    session_keys = ('checkout', 'user_id')
+    session_keys = ('checkout', )
 
     def get(self, request, **kwargs):
         if request.GET.get('checkout'):
@@ -226,12 +218,10 @@ class CheckoutView(PagingView):
 
 class EditorView(BaseView):
     template_name = 'main/editor/editor.html'
-    session_keys = ('user_id', 'uuid')
+    session_keys = ('uuid', )
 
+    @utils.login_required
     def get(self, request):
-        if not utils.user_exists(request):
-            return redirect('/')
-
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
             return redirect('/editor')
@@ -256,8 +246,7 @@ class EditorView(BaseView):
     def get_context(self, request, **kwargs):
         if request.session.get('uuid'):
             # load deck
-            user = User.objects.get(pk=request.session['user_id'])
-            deck = Deck.objects.get(user=user, uuid=request.session['uuid'])  # check if user owns the deck
+            deck = Deck.objects.get(user=request.user, uuid=request.session['uuid'])  # check if user owns the deck
             return self._create_context(deck=deck, cards=Card.objects.filter(deck=deck))
         else:
             return self._create_context(cards=[{}])  # empty card list with an empty card
@@ -266,18 +255,15 @@ class EditorView(BaseView):
     def save_deck(self, request, data):
         from uuid import uuid4
 
-        user = User.objects.get(pk=request.session['user_id'])
         data['uuid'] = uuid4()
-
         deck = Deck(
-            user=user,
+            user=request.user,
             name=data['name'],
             description=data['description'],
             uuid=data['uuid'],
             date_created=date.today(),
             last_modified=date.today()
         )
-
         deck.save()
         self.save_cards(request, deck, data)
         messages.success(request, _(f'Deck "{deck.name}" created successfully.'))
@@ -374,7 +360,7 @@ class EditorView(BaseView):
 
 class StudyView(BaseView):
     """Base class for those view classes which handle the studying aspect of quizcards."""
-    session_keys = ('user_id', 'uuid')
+    session_keys = ('uuid', )
 
     def get_context(self, request, **kwargs):
         return self._create_context(start_with=self.start_with(request))
