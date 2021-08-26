@@ -1,13 +1,13 @@
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout, SESSION_KEY
 from django.core.paginator import Paginator
 from django.db.transaction import atomic
 from django.shortcuts import redirect, render as django_render
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import View
 from abc import ABCMeta, abstractmethod
-from database_locks import locked
 from datetime import date
-from os.path import basename
-from . import authentication as auth, testgen, utils
+from . import forms, testgen, utils
 from .models import *
 
 
@@ -23,7 +23,7 @@ class BaseView(View, metaclass=ABCMeta):
     def get_context(self, request, **kwargs):
         pass
 
-    def create_context(self, **kwargs):
+    def _create_context(self, **kwargs):
         return kwargs
 
 
@@ -37,37 +37,55 @@ class PagingView(BaseView, metaclass=ABCMeta):
 
 class IndexView(BaseView):
     template_name = 'main/index/index.html'
+    site = None
     form = None
 
     def get(self, request):
         if request.GET.get('logout') is not None:
-            request.session.flush()
+            logout(request)
+
         if utils.user_exists(request):
             return redirect('/user')
-        if self.form is None:
+        if self.site is None:
             return redirect('/login')
+
+        if self.site == 'login':
+            self.form = forms.AuthenticationForm()
+        elif self.site == 'register':
+            self.form = forms.AccountCreationForm()
 
         return super().render(request)
 
     def post(self, request):
-        if self.form == 'login':
-            self.handle_login(request)
-            return redirect('/user')
-        elif self.form == 'register':
-            self.handle_registration(request)
-            return redirect('/login')
+        if self.site == 'login':
+            return self.handle_login(request)
+        elif self.site == 'register':
+            return self.handle_registration(request)
 
     def get_context(self, request, **kwargs):
-        return self.create_context(form=self.form)
+        return self._create_context(site=self.site, form=self.form)
 
     def handle_login(self, request):
-        if auth.validate_login(request):
-            user = User.objects.get(username=request.POST['username'])
-            request.session['user_id'] = user.pk    # create session for user
+        user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
+
+        if user is not None:
+            login(request, user)
+            request.session['user_id'] = request.session.pop(SESSION_KEY)
+            return redirect('/user')
+        else:
+            messages.error(request, _('Wrong username or password.'))
+            return redirect('/login')
 
     def handle_registration(self, request):
-        if auth.validate_registration(request):
-            messages.success(request, 'Registration successful!')
+        self.form = forms.AccountCreationForm(request.POST)
+
+        if self.form.is_valid():
+            self.form.save()
+            messages.success(request, _('Registration successful!'))
+            return redirect('/login')
+        else:
+            utils.show_form_error_messages(request, self.form)
+            return redirect('/register')
 
 
 class SearchView(PagingView):
@@ -84,7 +102,7 @@ class SearchView(PagingView):
 
     def get_context(self, request, **kwargs):
         self.init_page_manager(request)
-        return self.create_context(page=self.page_manager.page(kwargs['page']))
+        return self._create_context(page=self.page_manager.page(kwargs['page']))
 
     def init_page_manager(self, request):
         try:
@@ -121,45 +139,67 @@ class UserView(PagingView):
         if request.POST.get('search'):
             request.session['local_search'] = request.POST['query'].strip()
             return redirect('/user/search/1')
-        elif request.POST.get('delete'):
+        if request.POST.get('delete'):
             self.handle_deck_delete(request)
             return redirect('/user')
-        else:
-            self.handle_password_change(request)
-            return redirect('/user')
+        if request.POST.get('change'):
+            self.manage_user(request)   # handle email or password change
+            return redirect('/user/manage/')
 
     def get_context(self, request, **kwargs):
-        context = self.create_context(user=kwargs['user'], site=self.site)
+        context = self._create_context(user=kwargs['user'], site=self.site)
 
         if self.site != 'search':
             # delete possible previous local search session
             if request.session.get('local_search'):
                 del request.session['local_search']
 
-        if kwargs.get('page'):
-            self.init_page_manager(request)
-            context.update(page=self.page_manager.page(kwargs['page']))
+        if self.site == 'manage':
+            user = User.objects.get(pk=request.session['user_id'])
+            password_form = forms.PasswordChangeForm(user)
+            email_form = forms.EmailChangeForm(user)
+            context.update(password_form=password_form, email_form=email_form)
+        else:
+            if kwargs.get('page'):
+                self.init_page_manager(request)
+                context.update(page=self.page_manager.page(kwargs['page']))
 
         return context
 
     def init_page_manager(self, request):
-        user = request.session['user_id']
+        user = User.objects.get(pk=request.session['user_id'])
         query = request.session.get('local_search') or ''
         decks = utils.get_decks_from_query(user, query, local=True)
         self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
 
     @atomic
-    @locked
     def handle_deck_delete(self, request):
         deck_id = request.POST['delete']
         deck = Deck.objects.get(pk=deck_id)
         name = deck.name
         deck.delete()
-        messages.success(request, f'Deck "{name}" was successfully deleted.')
+        messages.success(request, _(f'Deck "{name}" was successfully deleted.'))
 
-    def handle_password_change(self, request):
-        if auth.change_password(request):
-            messages.success(request, 'Password changed successfully.')
+    @atomic
+    def manage_user(self, request):
+        """Handles email and password changes."""
+
+        user = User.objects.select_for_update().get(pk=request.session['user_id'])
+
+        if request.POST['change'] == 'email':
+            # init email change form
+            form = forms.EmailChangeForm(user, request.POST)
+            msg = _('E-mail changed successfully.')
+        else:
+            # init password change form
+            form = forms.PasswordChangeForm(user, request.POST)
+            msg = _('Password changed successfully.')
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, msg)
+        else:
+            utils.show_form_error_messages(request, form)
 
 
 class CheckoutView(PagingView):
@@ -176,7 +216,7 @@ class CheckoutView(PagingView):
 
     def get_context(self, request, **kwargs):
         self.init_page_manager(request)
-        return self.create_context(page=self.page_manager.page(kwargs['page']))
+        return self._create_context(page=self.page_manager.page(kwargs['page']))
 
     def init_page_manager(self, request):
         checkout_user = User.objects.get(username=request.session['checkout'])
@@ -218,13 +258,11 @@ class EditorView(BaseView):
             # load deck
             user = User.objects.get(pk=request.session['user_id'])
             deck = Deck.objects.get(user=user, uuid=request.session['uuid'])  # check if user owns the deck
-            cards = Card.objects.filter(deck=deck)
-            return self.create_context(deck=deck, cards=cards)
+            return self._create_context(deck=deck, cards=Card.objects.filter(deck=deck))
         else:
-            return self.create_context(cards=[{}])   # empty card list with an empty card
+            return self._create_context(cards=[{}])  # empty card list with an empty card
 
     @atomic
-    @locked
     def save_deck(self, request, data):
         from uuid import uuid4
 
@@ -242,7 +280,7 @@ class EditorView(BaseView):
 
         deck.save()
         self.save_cards(request, deck, data)
-        messages.success(request, f'Deck "{deck.name}" created successfully.')
+        messages.success(request, _(f'Deck "{deck.name}" created successfully.'))
 
     def save_cards(self, request, deck, data):
         term_images = request.FILES.getlist('term-image')
@@ -261,13 +299,12 @@ class EditorView(BaseView):
             ).save()
 
     @atomic
-    @locked
     def update_deck(self, request, data):
-        deck = Deck.objects.get(uuid=data['uuid'])
+        deck = Deck.objects.select_for_update().get(uuid=data['uuid'])
         data['last_modified'] = date.today()
         self._update(deck, data, 'name', 'description', 'last_modified')
         self.update_cards(request, deck, data)
-        messages.success(request, f'Deck "{deck.name}" updated successfully.')
+        messages.success(request, _(f'Deck "{deck.name}" updated successfully.'))
 
     def update_cards(self, request, deck, data):
         cards = Card.objects.filter(deck=deck)
@@ -340,7 +377,7 @@ class StudyView(BaseView):
     session_keys = ('user_id', 'uuid')
 
     def get_context(self, request, **kwargs):
-        return self.create_context(start_with=self.start_with(request))
+        return self._create_context(start_with=self.start_with(request))
 
     def save_settings(self, request):
         request.session['start_with'] = request.POST['start-with']
@@ -366,9 +403,8 @@ class FlashcardsView(StudyView):
 
     def get_context(self, request, **kwargs):
         deck = Deck.objects.get(uuid=request.session['uuid'])
-        cards = Card.objects.filter(deck=deck)
         context = super().get_context(request)
-        context.update(cards=cards)
+        context.update(cards=Card.objects.filter(deck=deck))
         return context
 
 

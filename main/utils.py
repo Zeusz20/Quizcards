@@ -12,7 +12,18 @@ def session_clean_up(view, request):
             del request.session[key]
 
 
+def show_form_error_messages(request, form):
+    from django.contrib import messages
+
+    for error_type in form.errors:
+        for error_text in form.errors[error_type]:
+            messages.error(request, error_text)
+
+
 def get_image_url(image_path):
+    if image_path == '':
+        return image_path
+
     from django.conf import settings
     from os.path import basename, join
 

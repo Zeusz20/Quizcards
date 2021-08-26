@@ -1,4 +1,4 @@
-<nav class="navbar zeusz-nav">
+<nav class="navbar mb-2 zeusz-nav">
     <a href="/" class="h3 zeusz-unstyled">Quizcards</a>
     {% if request.session.user_id %}
         <a href="/user/">Home</a>
@@ -9,6 +9,7 @@
         <a href="/register/">Register</a>
     {% endif %}
 
+    <!-- Search bar form -->
     <form method="post" action="/search/1" class="col-md-2">
         {% csrf_token %}
         <div class="input-group">
@@ -19,5 +20,3 @@
         </div>
     </form>
 </nav>
-
-<hr>

@@ -1,18 +1,20 @@
+{% load render %}
+
 <form method="post">
     {% csrf_token %}
     <small class="form-text text-muted">Your username must be at least 4 characters.</small>
     <div class="input-group mb-3">
-        <input type="text" id="username" name="username" placeholder="Username" required class="form-control">
+        {% render form.username placeholder="Username" minlength="4" class="form-control" %}
     </div>
     <div class="input-group mb-3">
-        <input type="email" id="email" name="email" placeholder="E-mail" required class="form-control">
+        {% render form.email placeholder="E-mail" class="form-control" %}
     </div>
     <small class="form-text text-muted">Your password must be at least 8 characters.</small>
     <div class="input-group mb-3">
-      <input type="password" id="password1" name="password1" placeholder="Password" required class="form-control">
+        {% render form.password1 placeholder="Password" minlength="8" class="form-control" %}
     </div>
     <div class="input-group mb-3">
-      <input type="password" id="password2" name="password2" placeholder="Verify password" required class="form-control">
+        {% render form.password2 placeholder="Confirm Password" class="form-control" %}
     </div>
     <button type="submit" class="btn btn-primary mb-2">Register</button>
 </form>

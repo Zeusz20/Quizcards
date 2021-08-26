@@ -14,11 +14,12 @@
     </head>
 
     <body>
-        <div id="content" name="content" class="main">
+        <div id="content" class="main">
             <div class="row justify-content-center">
                 {% include "main/header.html" %}
 
                 {% block content %}
+                    {# Page content goes here... #}
                 {% endblock content %}
             </div>
         </div>
@@ -28,6 +29,7 @@
         </script>
 
         {% block script %}
+            {# Page scripting goes here... #}
         {% endblock script %}
     </body>
 </html>

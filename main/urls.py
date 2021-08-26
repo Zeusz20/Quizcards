@@ -3,8 +3,8 @@ from .views import *
 
 urlpatterns = [
     path('', IndexView.as_view()),
-    path('login/', IndexView.as_view(form='login')),
-    path('register/', IndexView.as_view(form='register')),
+    path('login/', IndexView.as_view(site='login')),
+    path('register/', IndexView.as_view(site='register')),
 
     path('search/<page>', SearchView.as_view(), name='page'),
 

@@ -1,0 +1,16 @@
+{% load render %}
+
+<form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="change" value="email">
+
+    <div class="row">
+        <div class="form-group col-md-3">
+            <label for="id_new_email">Enter your new e-mail address:</label>
+            {% render email_form.new_email class="form-control" %}
+            <br>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-danger">Change e-mail</button>
+</form>

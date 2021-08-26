@@ -1,38 +1,16 @@
 <p>
     <b>Username:</b> {{ user.username }} <br>
-    <b>Member since:</b> {{ user.date_created }}
+    <b>Member since:</b> {{ user.date_joined|date:"Y M. d" }} <br>
 </p>
 <hr>
 
-<h3>Change password</h3>
-{% include "main/messages.html" %}
+<div class="col">
+    {% include "main/messages.html" %}
 
-<form method="post">
-    {% csrf_token %}
+    <h3>Change e-mail</h3>
+    {% include "main/user/email_change_form.html" %}
+    <hr>
+    <h3>Change password</h3>
+    {% include "main/user/password_change_form.html" %}
 
-    <div class="row">
-        <div class="form-group col-md-3">
-            <label for="old_password">Current password:</label>
-            <input type="password" name="old_password" id="old_password" class="form-control">
-            <br>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="form-group col-md-3">
-            <label for="password1">New password:</label>
-            <input type="password" name="password1" id="password1" class="form-control">
-            <br>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="form-group col-md-3">
-            <label for="password2"> Confirm new password:</label>
-            <input type="password" name="password2" id="password2" class="form-control">
-            <br>
-        </div>
-    </div>
-
-    <button type="submit" class="btn btn-outline-danger">Change password</button>
-</form>
+</div>
