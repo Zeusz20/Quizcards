@@ -3,10 +3,10 @@
 
     {% if image %}
         {% load static %}
-        <img name="{{ type }}-preview" src="{% static image %}" alt="" loading="lazy" class="zeusz-img">
+        <img name="{{ type }}-preview" src="{% static image.src %}" alt="{{ image.alt }}" loading="lazy" class="zeusz-img">
     {% else %}
         <img name="{{ type }}-preview" src="" alt="" loading="lazy" class="zeusz-img">
     {% endif %}
 
-    <button type="button" name="del-{{ type }}-img" style="width: 2em" class="btn-danger">X</button>
+    <button type="button" name="del-{{ type }}-img" style="width: 2em" class="btn-danger">&times;</button>
 </div>

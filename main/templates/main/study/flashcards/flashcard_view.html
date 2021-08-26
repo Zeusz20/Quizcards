@@ -4,7 +4,7 @@
         {% if card.term_image %}
             {% with card.term_image_url as term_image %}
                 {% load static %}
-                <img src="{% static term_image %}" alt="" class="zeusz-img">
+                <img src="{% static card.term_image.src %}" alt="{{ card.term_image.alt }}" class="zeusz-img">
             {% endwith %}
         {% endif %}
     </div>
@@ -14,7 +14,7 @@
         {% if card.definition_image %}
             {% with card.definition_image_url as definition_image %}
                 {% load static %}
-                <img src="{% static definition_image %}" alt="" class="zeusz-img">
+                <img src="{% static card.definition_image.src %}" alt="{{ card.definition_image.alt }}" class="zeusz-img">
             {% endwith %}
         {% endif %}
     </div>

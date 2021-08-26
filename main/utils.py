@@ -20,17 +20,6 @@ def show_form_error_messages(request, form):
             messages.error(request, error_text)
 
 
-def get_image_url(image_path):
-    if image_path == '':
-        return image_path
-
-    from django.conf import settings
-    from os.path import basename, join
-
-    root = basename(settings.MEDIA_ROOT)
-    return join(root, basename(image_path))
-
-
 def random_string(length):
     from random import choice
     from string import ascii_letters, digits

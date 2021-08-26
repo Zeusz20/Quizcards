@@ -13,13 +13,13 @@ def generate_questions(uuid, start_with):
     for card in cards:
         question = {
             'question': {
-                'text': card.__dict__[start_with],
-                'image': getattr(Card, start_with + '_image_url')(card),
+                'text': getattr(card, start_with),
+                'image': getattr(card, start_with + '_image'),
             },
             'answers': [
                 {
-                    'text': card.__dict__[opposite_face],
-                    'image': getattr(Card, opposite_face + '_image_url')(card),
+                    'text': getattr(card, opposite_face),
+                    'image': getattr(card, opposite_face + '_image'),
                     'correct': True,
                 },
             ]
@@ -32,8 +32,8 @@ def generate_questions(uuid, start_with):
 
         for wrong in wrong_answers:
             question['answers'].append({
-                'text': wrong.__dict__[opposite_face],
-                'image': getattr(Card, opposite_face + '_image_url')(wrong),
+                'text': getattr(wrong, opposite_face),
+                'image': getattr(wrong, opposite_face + '_image'),
                 'correct': False,
             })
 

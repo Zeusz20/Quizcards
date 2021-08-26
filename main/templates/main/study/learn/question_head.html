@@ -1,9 +1,7 @@
 <div class="m-2">
     <h5>{{ quiz.question.text }}</h5>
     {% if question.image %}
-        {% with "media/"|add:question.image as image %}
-            {% load static %}
-            <img src="{% static image %}" alt="" class="zeusz-img">
-        {% endwith %}
+        {% load static %}
+        <img src="{% static question.image.src %}" alt="{{ question.image.alt }}" class="zeusz-img">
     {% endif %}
 </div>
