@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.core.paginator import Paginator
 from django.db.transaction import atomic
 from django.shortcuts import redirect, render as django_render
@@ -38,12 +38,8 @@ class PagingView(BaseView, metaclass=ABCMeta):
 class IndexView(BaseView):
     template_name = 'main/index/index.html'
     site = None
-    form = None
 
     def get(self, request):
-        from .cleaner import file_cleanup
-        file_cleanup()
-
         if request.GET.get('logout') is not None:
             logout(request)
 
@@ -51,11 +47,6 @@ class IndexView(BaseView):
             return redirect('/user')
         if self.site is None:
             return redirect('/login')
-
-        if self.site == 'login':
-            self.form = forms.AuthenticationForm()
-        elif self.site == 'register':
-            self.form = forms.AccountCreationForm()
 
         return super().render(request)
 
@@ -66,8 +57,9 @@ class IndexView(BaseView):
             return self.handle_registration(request)
 
     def get_context(self, request, **kwargs):
-        return self._create_context(site=self.site, form=self.form)
+        return self._create_context(site=self.site)
 
+    @utils.sensitive
     def handle_login(self, request):
         user = authenticate(request, username=request.POST['username'], password=request.POST['password'])
         request.user = user
@@ -79,15 +71,16 @@ class IndexView(BaseView):
             messages.error(request, _('Wrong username or password.'))
             return redirect('/login')
 
+    @utils.sensitive
     def handle_registration(self, request):
-        self.form = forms.AccountCreationForm(request.POST)
+        form = forms.AccountCreationForm(request.POST)
 
-        if self.form.is_valid():
-            self.form.save()
+        if form.is_valid():
+            form.save()
             messages.success(request, _('Registration successful!'))
             return redirect('/login')
         else:
-            utils.show_form_error_messages(request, self.form)
+            utils.show_form_error_messages(request, form)
             return redirect('/register')
 
 
@@ -108,8 +101,7 @@ class SearchView(PagingView):
         return self._create_context(page=self.page_manager.page(kwargs['page']))
 
     def init_page_manager(self, request):
-        user = request.user if isinstance(request.user, User) else None
-        decks = utils.get_decks_from_query(user, request.session['global_search'], local=False)
+        decks = utils.get_decks_from_query(request.user, request.session['global_search'], local=False)
         self.page_manager = Paginator(decks, utils.SEARCH_VIEW_PAGE_SIZE)
 
 
@@ -118,13 +110,13 @@ class UserView(PagingView):
     session_keys = ('local_search', )
     site = None
 
-    @utils.login_required
+    @utils.auth_required
     def get(self, request, **kwargs):
         utils.session_clean_up(self, request)
 
         # fresh login tasks
         if self.site is None and kwargs.get('page') is None:
-            request.user.save()     # update last login date
+            request.user.save()  # update last login date
             return redirect('/user/1')
 
         return super().render(request, **kwargs)
@@ -139,7 +131,7 @@ class UserView(PagingView):
             return redirect('/user')
 
         if request.POST.get('change'):
-            self.manage_user(request)   # handle email or password change
+            self.manage_user(request)  # handle email or password change
             return redirect('/user/manage/')
 
     def get_context(self, request, **kwargs):
@@ -162,33 +154,32 @@ class UserView(PagingView):
         return context
 
     def init_page_manager(self, request):
-        query = request.session.get('local_search') or ''
+        query = request.session.get('local_search')
         decks = utils.get_decks_from_query(request.user, query, local=True)
         self.page_manager = Paginator(decks, utils.USER_VIEW_PAGE_SIZE)
 
     @atomic
     def handle_deck_delete(self, request):
         deck_id = request.POST['delete']
-        deck = Deck.objects.get(pk=deck_id)
+        deck = Deck.objects.select_for_update().get(pk=deck_id)
         name = deck.name
         deck.delete()
         messages.success(request, _(f'Deck "{name}" was successfully deleted.'))
 
-    @atomic
+    @utils.sensitive
     def manage_user(self, request):
         """Handles email and password changes."""
 
-        user = User.objects.select_for_update().get(pk=request.user.pk)
-
         if request.POST['change'] == 'email':
-            form = forms.EmailChangeForm(user, request.POST)
+            form = forms.EmailChangeForm(request.user, request.POST)
             msg = _('E-mail changed successfully.')
         else:
-            form = forms.PasswordChangeForm(user, request.POST)
+            form = forms.PasswordChangeForm(request.user, request.POST)
             msg = _('Password changed successfully.')
 
         if form.is_valid():
             form.save()
+            update_session_auth_hash(request, request.user)  # in case of password change, so user is not logged out
             messages.success(request, msg)
         else:
             utils.show_form_error_messages(request, form)
@@ -220,7 +211,7 @@ class EditorView(BaseView):
     template_name = 'main/editor/editor.html'
     session_keys = ('uuid', )
 
-    @utils.login_required
+    @utils.auth_required
     def get(self, request):
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
@@ -415,3 +406,16 @@ class LearnView(StudyView):
         context = super().get_context(request, **kwargs)
         context.update(questions=testgen.generate_questions(uuid, start_with))
         return context
+
+
+class CryptoView(View):
+    """Grants access to RSA public key. Available through PUT request."""
+
+    def put(self, request):
+        from django.http import HttpResponse
+        from .crypto import crypto
+        return HttpResponse(crypto.public_key())
+
+    def get(self, request):
+        from django.http import Http404
+        raise Http404

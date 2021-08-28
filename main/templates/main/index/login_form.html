@@ -1,12 +1,10 @@
-{% load render %}
-
-<form method="post">
+<form id="sensitive" method="post">
     {% csrf_token %}
     <div class="input-group mb-3">
-        {% render form.username placeholder="Username" class="form-control" %}
+        <input type="text" name="username" placeholder="Username" class="form-control">
     </div>
     <div class="input-group mb-3">
-        {% render form.password placeholder="Password" class="form-control" %}
+        <input type="password" name="password" placeholder="Password" class="form-control">
     </div>
     <button type="submit" class="btn btn-primary my-2">Log In</button>
 </form>

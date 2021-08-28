@@ -20,6 +20,10 @@ class Shortcuts {
         element.classList.remove('invisible')
     }
 
+    getCSRFToken() {
+        return document.getElementsByName('csrfmiddlewaretoken')[0].value
+    }
+
 }
 
 // Shortcut class instansnce to access shortcut functions

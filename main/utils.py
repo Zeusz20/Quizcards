@@ -2,15 +2,39 @@ USER_VIEW_PAGE_SIZE = 7
 SEARCH_VIEW_PAGE_SIZE = 10
 
 
-def login_required(get_request):
+def auth_required(get_request):
     """Redirect unauthenticated user to home page if trying to access pages with authentication requirement."""
 
     from django.shortcuts import redirect
 
-    def decorator(view, request, path, **kwargs):
+    def decorator(view, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('/')
+            return redirect('/login')
         return get_request(view, request, **kwargs)
+
+    return decorator
+
+
+def sensitive(post_request):
+    """Decrypt passwords in POST."""
+
+    from django.http import QueryDict
+    from .crypto import crypto
+
+    def decorator(view, request, *args, **kwargs):
+        post = dict(request.POST.items())
+
+        # decrypt encrypted values
+        for key, value in post.items():
+            if 'password' in key:
+                post[key] = crypto.decrypt(value)
+
+        # concat key value pairs
+        pairs = map(lambda pair: '='.join(pair), post.items())
+        query_str = '&'.join(pairs)
+
+        request.POST = QueryDict(query_str)
+        return post_request(view, request)
 
     return decorator
 
@@ -47,17 +71,17 @@ def validate_datetime(day, hour, minute):
         raise ValueError(minute)
 
 
-def get_decks_from_query(user=None, query='', local=False):
+def get_decks_from_query(user, query, local):
     from django.db.models import Q
     from .models import Deck
 
-    if user is None:
+    if not user.is_authenticated:
         # non logged in user's global search
         return Deck.objects.filter(
             Q(name__icontains=query) | Q(description__icontains=query)
         )
 
-    if query == '':
+    if query is None:
         # logged in user's deck pagination
         return Deck.objects.filter(user=user)
 

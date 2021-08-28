@@ -1,14 +1,11 @@
-{% load render %}
-
 <form method="post">
     {% csrf_token %}
     <input type="hidden" name="change" value="email">
 
-    <div class="row">
+    <div class="row mb-2">
         <div class="form-group col-md-3">
             <label for="id_new_email">Enter your new e-mail address:</label>
-            {% render email_form.new_email class="form-control" %}
-            <br>
+            <input id="id_new_email" type="email" name="new_email" class="form-control">
         </div>
     </div>
 

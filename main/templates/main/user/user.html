@@ -10,3 +10,9 @@
         {% endif %}
     </div>
 {% endblock content %}
+
+{% block script %}
+    {% if site == "manage" %}
+        {% include "main/crypto.html" %}
+    {% endif %}
+{% endblock script %}

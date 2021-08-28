@@ -19,4 +19,6 @@ urlpatterns = [
 
     path('flashcards/', FlashcardsView.as_view()),
     path('learn/', LearnView.as_view()),
+
+    path('key/', CryptoView.as_view()),
 ]
