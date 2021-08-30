@@ -2,16 +2,14 @@
     <div class="col">
         <h6>Term</h6>
         <div id="term"></div>
-        <input type="file" name="term-image" accept="image/png, image/jpeg" class="mb-2">
-        <img name="term-preview" src="" alt="" loading="lazy" class="zeusz-img">
+        {% include "main/editor/image_uploader.html" with type="term" %}
         <button type="button" name="del-term-img" style="width: 2em" class="btn-danger">X</button>
     </div>
 
     <div class="col">
         <h6>Definition</h6>
         <div id="definition"></div>
-        <input type="file" name="definition-image" accept="image/png, image/jpeg" class="mb-2">
-        <img name="definition-preview" src="" alt="" loading="lazy" class="zeusz-img">
+        {% include "main/editor/image_uploader.html" with type="definition" %}
         <button type="button" name="del-definition-img" style="width: 2em" class="btn-danger">X</button>
     </div>
 

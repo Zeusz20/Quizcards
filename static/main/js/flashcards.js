@@ -2,7 +2,7 @@ init()
 
 
 function init() {
-    document.getElementsByName('card').forEach(card => fillCardFace(card))
+    shortcuts.getElementsByLabel('card').forEach(card => fillCardFace(card))
     document.getElementsByClassName('carousel-item')[0].classList.add('active')
     bindRotation()
 }
@@ -13,7 +13,7 @@ function startWith() {
 }
 
 function getCard(child) {
-    return (child.parentElement.getAttribute('name') == 'card') ? child.parentElement : getCard(child.parentElement)
+    return (child.parentElement.getAttribute('data-label') == 'card') ? child.parentElement : getCard(child.parentElement)
 }
 
 function bindRotation() {
@@ -29,8 +29,8 @@ function bindRotation() {
 }
 
 function fillCardFace(card, flipped=false) {
-    const term = getCardElement(card, 'term')
-    const definition = getCardElement(card, 'definition')
+    const term = getCardFace(card, 'term')
+    const definition = getCardFace(card, 'definition')
 
     // conditions that need to be fulfilled in order to display the card's term, otherwise display the card's definition
     let termDisplayConditions = (startWith() == 'term' && !flipped) || (startWith() == 'definition' && flipped)
@@ -47,6 +47,6 @@ function fillCardFace(card, flipped=false) {
     }
 }
 
-function getCardElement(card, name) {
-    return Array.from(card.getElementsByTagName('div')).filter(div => div.getAttribute('name') == name)[0]
+function getCardFace(card, name) {
+    return shortcuts.getAllChildNodes(card).filter(child => child.getAttribute('data-label') == name)[0]
 }

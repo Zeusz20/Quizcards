@@ -4,7 +4,7 @@ init()
 
 
 function init() {
-    const nextButton = document.getElementById('next')
+    const nextButton = document.getElementById('next-btn')
     shortcuts.hideElement(nextButton)
     
     nextButton.onclick = () => {
@@ -13,17 +13,17 @@ function init() {
     }
 
     // hide retry button
-    const retryButton = document.getElementById('retry')
+    const retryButton = document.getElementById('retry-btn')
     shortcuts.hideElement(retryButton)
 
     showNextQuestion()
 }
 
-/* displays the next question in the quiz */
+/** Displays the next question in the quiz. */
 function showNextQuestion() {
     activeId++
-
-    const quizes = Array.from(document.getElementsByName('quiz'))
+    const quizes = Array.from(shortcuts.getElementsByLabel('quiz'))
+    
     for(let i = 0; i < quizes.length; i++) {
         if(i == activeId) {
             shortcuts.showElement(quizes[i])
@@ -35,12 +35,12 @@ function showNextQuestion() {
     }
 }
 
-/* displays "next button" of "retry button" depending on quiz progression */
+/** Displays "next button" of "retry button" depending on quiz progression. */
 function showNav() {
-    const nextButton = document.getElementById('next')
-    const retryButton = document.getElementById('retry')
+    const nextButton = document.getElementById('next-btn')
+    const retryButton = document.getElementById('retry-btn')
     
-    if(activeId + 1 < document.getElementsByName('quiz').length) {
+    if(activeId + 1 < shortcuts.getElementsByLabel('quiz').length) {
         shortcuts.showElement(nextButton)
     }
     else {
@@ -48,9 +48,9 @@ function showNav() {
     }
 }
 
-/* adds onclick funtionality to answer nodes, so user can choose and click an answer */
+/** Adds onclick funtionality to answer nodes, so user can choose and click an answer. */
 function bind(quiz) {
-    const answers = Array.from(quiz.getElementsByTagName('button'))
+    const answers = document.getElementsByName('answer')
 
     answers.forEach(answer => {
         answer.onclick = () => {
@@ -68,28 +68,28 @@ function bind(quiz) {
     })
 }
 
-/* after answering unbind any functionality from answer nodes */
+/** After answering unbind any functionality from answer nodes. */
 function unbind(answers) {
     answers.forEach(answer => {
         answer.onclick = null
     })
 }
 
-/* colors the respective answer green */
+/** Colors the respective answer green. */
 function success(answer) {
     answer.classList.remove('btn-outline-secondary')
     answer.classList.add('btn-success')
 }
 
-/* colors the respective answer red */
+/** Colors the respective answer red. */
 function fail(answer) {
     answer.classList.remove('btn-outline-secondary')
     answer.classList.add('btn-danger')
 }
 
-/* finds the correct answer node which matches the question */
+/** Finds the correct answer node which matches the question. */
 function findCorrectAnswer(quiz) {
-    const answers = Array.from(quiz.getElementsByTagName('button'))
+    const answers = Array.from(document.getElementsByName('answer'))
 
     for(let i=0; i < answers.length; i++) {
         const answer = answers[i]

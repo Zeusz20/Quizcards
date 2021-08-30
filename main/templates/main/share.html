@@ -1,12 +1,12 @@
-<button type="button" data-bs-toggle="modal" data-bs-target="#share" class="btn btn-light">
+<button type="button" data-bs-toggle="modal" data-bs-target="#share-{{ deck.uuid }}" class="btn btn-warning">
     Share
 </button>
 
-<div id="share" tabindex="-1" class="modal">
+<div id="share-{{ deck.uuid }}" tabindex="-1" class="modal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h4>Share</h4>
+                <h4><strong>Share</strong> {{ deck.name }}</h4>
                 <button type="button" data-bs-dismiss="modal" class="btn-close"></button>
             </div>
             <div class="modal-body">
@@ -14,12 +14,12 @@
                     Copy link: <br>
                     <div class="input-group">
                         <input id="copy" type="text" value="{{ request.get_host }}/flashcards/?uuid={{ deck.uuid }}" class="form-control" readonly>
-                        <button type="button" onclick="urlCopy()" class="btn btn-secondary">Copy</button>
+                        <button type="button" onclick="shortcuts.urlCopy()" class="btn btn-secondary">Copy</button>
                     </div>
                 </div>
                 <div class="mt-2">
                     Share on: <br>
-                    <div class="d-flex algin-items-start">
+                    <div class="d-flex align-items-start">
                         <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.get_host }}/flashcards/?uuid={{ deck.uuid }}" class="m-1">
                             <img src="https://cdn.icon-icons.com/icons2/836/PNG/512/Facebook_icon-icons.com_66805.png" alt="facebook-icon" class="zeusz-social">
                         </a>

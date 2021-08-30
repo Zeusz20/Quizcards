@@ -1,21 +1,20 @@
 {% if request.session.uuid %}
-<div id="{{ card.pk }}" name="card" class="row my-5 zeusz-card">
+<div id="{{ card.pk }}" data-label="card" class="row my-5 zeusz-card">
 {% else %}
-<div name="card" class="row my-5 zeusz-card">
+<div data-label="card" class="row my-5 zeusz-card">
 {% endif %}
     <div class="col">
         <h6>Term</h6>
 
         {% if request.session.uuid %}
-            <div name="term">{% autoescape off %} {{ card.term }} {% endautoescape %}</div>
+            <div data-label="term">{% autoescape off %} {{ card.term }} {% endautoescape %}</div>
             {% if card.term_image %}
-            <p>SRC = {{ card.term_image. }}</p>
                 {% include "main/editor/image_uploader.html" with type="term" image=card.term_image %}
             {% else %}
                 {% include "main/editor/image_uploader.html" with type="term" %}
             {% endif %}
         {% else %}
-            <div name="term"></div>
+            <div data-label="term"></div>
             {% include "main/editor/image_uploader.html" with type="term" %}
         {% endif %}
     </div>
@@ -24,14 +23,14 @@
         <h6>Definition</h6>
 
         {% if request.session.uuid %}
-            <div name="definition">{% autoescape off %} {{ card.definition }} {% endautoescape %}</div>
+            <div data-label="definition">{% autoescape off %} {{ card.definition }} {% endautoescape %}</div>
             {% if card.definition_image %}
                 {% include "main/editor/image_uploader.html" with type="definition" image=card.definition_image %}
             {% else %}
                 {% include "main/editor/image_uploader.html" with type="definition" %}
             {% endif %}
         {% else %}
-            <div name="definition"></div>
+            <div data-label="definition"></div>
             {% include "main/editor/image_uploader.html" with type="definition" %}
         {% endif %}
     </div>

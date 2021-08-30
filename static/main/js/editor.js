@@ -6,7 +6,7 @@ init()
 
 function init() {
     window.onload = warnUser
-    document.getElementById('new-card').onclick = addNewCard
+    document.getElementById('new-card-btn').onclick = addNewCard
     document.getElementById('save-btn').onclick = save
     saveButtonListener = setInterval(canSave, 100)
     initEditor()
@@ -30,7 +30,7 @@ function initTinyMCE() {
 
 function getTinyMCEConfig(type) {
     return {
-        selector: `div[name="${type}"]`,
+        selector: `div[data-label="${type}"]`,
         menubar: false,
         plugins: 'textcolor',
         toolbar: 'undo redo | bold italic underline | forecolor backcolor',
@@ -52,36 +52,38 @@ function addNewCard() {
     const template = document.createElement('template')
     template.innerHTML = raw.innerHTML.trim()
 
-    // add name attribute
-    template.content.firstChild.setAttribute('name', 'card')
+    // add data-label attribute now, so it doesn't count towards total card count
+    template.content.firstChild.setAttribute('data-label', 'card')
 
-    // replace the id attributes with name attribute, so tinyMCE can instantiate the editors correctly
-    Array.from(template.content.firstChild.getElementsByTagName('div'))
-        .filter(div => {
-            let id = div.getAttribute('id')
+    // replace id attributes of the card faces with data-label attribute, so tinyMCE can instantiate the editors correctly
+    shortcuts.getAllChildNodes(template.content.firstChild)
+        .filter(element => {
+            let id = element.getAttribute('id')
             return id == 'term' || id == 'definition'
         })
-        .forEach(div => {
-            let value = div.getAttribute('id')
-            div.removeAttribute('id')
-            div.setAttribute('name', value)
+        .forEach(element => {
+            let value = element.getAttribute('id')
+            element.removeAttribute('id')
+            element.setAttribute('data-label', value)
         })
 
     document.getElementById('container').appendChild(template.content.firstChild)
-    
+
     initEditor()
 }
 
 function initDeleteButton() {
     document.getElementsByName('delete-btn').forEach(btn => {
-        btn.onclick = () => {
-            getCard(btn).remove()
+        if(btn.onclick == null) {
+            btn.onclick = () => {
+                getCard(btn).remove()
+            }
         }
     })
 }
 
 function getCard(child) {
-    if(child.parentElement.getAttribute('name') == 'card') {
+    if(child.parentElement.getAttribute('data-label') == 'card') {
         return child.parentElement
     }
     
@@ -91,7 +93,7 @@ function getCard(child) {
 function getEditors(parent, acc=[]) {
     parent.childNodes.forEach(child => {
         if(child.nodeType == Node.ELEMENT_NODE) {
-            let name = child.getAttribute('name')
+            let name = child.getAttribute('data-label')
             if(name == 'term' || name == 'definition') {
                 acc.push(child)
             }
@@ -113,25 +115,29 @@ function initImageButtons(type) {
 
     // image upload
     document.getElementsByName(imageName).forEach(input => {
-        input.onchange = () => {
-            if(input.files) {
-                // get corresponging image preview node
-                const img = Array.from(input.parentElement.childNodes).filter(element => element.name == previewName)[0]
-                img.src = URL.createObjectURL(input.files[0])
+        if(input.onchange == null) {
+            input.onchange = () => {
+                if(input.files) {
+                    // get corresponging image preview node
+                    const img = Array.from(input.parentElement.childNodes).filter(element => element.name == previewName)[0]
+                    img.src = URL.createObjectURL(input.files[0])
+                }
+                hideOrShowImageControls(imageName, previewName, deleteBtnName)
             }
-            hideOrShowImageControls(imageName, previewName, deleteBtnName)
         }
     })
 
     // image delete
     document.getElementsByName(deleteBtnName).forEach(btn => {
-        btn.onclick = () => {
-            // get corresponding image input and preview
-            const file = Array.from(btn.parentElement.childNodes).filter(element => element.name == imageName)[0]
-            const preview = Array.from(btn.parentElement.childNodes).filter(element => element.name == previewName)[0]
-            file.value = ''
-            preview.src = ''
-            hideOrShowImageControls(imageName, previewName, deleteBtnName)
+        if(btn.onclick == null) {
+            btn.onclick = () => {
+                // get corresponding image input and preview
+                const file = Array.from(btn.parentElement.childNodes).filter(element => element.name == imageName)[0]
+                const preview = Array.from(btn.parentElement.childNodes).filter(element => element.name == previewName)[0]
+                file.value = ''
+                preview.src = ''
+                hideOrShowImageControls(imageName, previewName, deleteBtnName)
+            }
         }
     })
 }
@@ -183,7 +189,7 @@ function hideOrShowImageControls(imageName, previewName, deleteBtnName) {
 function canSave() {
     const button = document.getElementById('save-btn')
     const name = document.getElementById('name').value.trim()
-    const cards = document.getElementsByName('card').length
+    const cards = shortcuts.getElementsByLabel('card').length
     
     // deck must have a name and a minimum of 2 cards
     button.disabled = (name === '' || cards < 2)
@@ -219,7 +225,7 @@ function getDeckJson(addPrimaryKey) {
     // save contents to selector
     tinymce.triggerSave()
 
-    document.getElementsByName('card').forEach(element => {
+    shortcuts.getElementsByLabel('card').forEach(element => {
         const card = {
             'term': getText(element, 'term'),
             'term_image': getImage(element, 'term'),
@@ -230,7 +236,7 @@ function getDeckJson(addPrimaryKey) {
     })
 
     if(addPrimaryKey) {
-        const ids = Array.from(document.getElementsByName('card')).map(card => card.getAttribute('id'))
+        const ids = Array.from(shortcuts.getElementsByLabel('card')).map(card => card.getAttribute('id'))
         for(let i = 0; i < deck.cards.length; i++) {
             deck.cards[i].pk = parseInt(ids[i])
         }
@@ -240,7 +246,7 @@ function getDeckJson(addPrimaryKey) {
 }
 
 function getText(node, type) {
-    const text = Array.from(node.getElementsByTagName('div')).filter(div => div.getAttribute('name') == type)[0]
+    const text = Array.from(shortcuts.getAllChildNodes(node)).filter(child => child.getAttribute('data-label') == type)[0]
     return text.innerHTML
 }
 
@@ -260,6 +266,6 @@ function getImage(node, type) {
 }
 
 function getFilename(path) {
-    // found a much more elegant way myself
+    // {~/path/to/file/}filename.ext - everything in {} is replaced
     return path.replace(/.*(\/|\\)/g, '')
 }

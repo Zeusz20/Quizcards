@@ -1,5 +1,5 @@
-<div id="{{ card.pk }}" name="card" class="card col-6">
-    <div name="term" class="m-2 hidden">
+<div id="{{ card.pk }}" data-label="card" class="card col-6">
+    <div data-label="term" class="m-2 hidden">
         {% autoescape off %} {{ card.term }} {% endautoescape %}
         {% if card.term_image %}
             {% with card.term_image_url as term_image %}
@@ -9,7 +9,7 @@
         {% endif %}
     </div>
 
-    <div name="definition" class="m-2 hidden">
+    <div data-label="definition" class="m-2 hidden">
         {% autoescape off %} {{ card.definition }} {% endautoescape %}
         {% if card.definition_image %}
             {% with card.definition_image_url as definition_image %}
