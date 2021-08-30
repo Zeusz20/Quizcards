@@ -17,30 +17,14 @@
     </div>
 
     <div class="card-footer bg-transparent mx-2 ps-0">
-        <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary">Study</a>
-
-        {% if not request.session.checkout and not request.session.global_search %}
-            <a href="/editor/?uuid={{ deck.uuid }}" class="btn btn-success">Edit</a>
-
-            <!-- Delete harmonica -->
-            <button type="button" class="btn btn-danger"
-                    data-bs-toggle="collapse" data-bs-target="#confirm-{{ deck.pk }}"
-                    aria-controls="confirm-{{ deck.pk }}" aria-expanded="false">
-                Delete
-            </button>
-            <div id="confirm-{{ deck.pk }}" class="collapse mt-2">
-                <form method="post">
-                    <p>Are sure you want to delete <strong>{{ deck.name }}</strong>?</p>
-                    {% csrf_token %}
-                    <button type="submit" name="delete" value="{{ deck.pk }}" class="btn btn-danger">Yes</button>
-                    <button type="button" class="btn btn-primary"
-                            data-bs-toggle="collapse" data-bs-target="#confirm-{{ deck.pk }}"
-                            aria-controls="confirm-{{ deck.pk }}" aria-expanded="false">
-                        No
-                    </button>
-                </form>
+        <div class="navbar m-0 p-0">
+            <div>
+                <a href="/flashcards/?uuid={{ deck.uuid }}" class="btn btn-primary">Study</a>
+                {% if not request.session.checkout and not request.session.global_search %}
+                    {% include "main/user/deck_editing_options.html" %}
+                {% endif %}
             </div>
-            <!-- Delete harmonica END -->
-        {% endif %}
+            {% include "main/share.html" %}
+        </div>
     </div>
 </div>

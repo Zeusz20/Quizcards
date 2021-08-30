@@ -1,9 +1,9 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import authenticate, login, logout
 from django.core.paginator import Paginator
 from django.db.transaction import atomic
 from django.shortcuts import redirect, render as django_render
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from django.views.generic import View
 from abc import ABCMeta, abstractmethod
 from datetime import date
@@ -74,14 +74,12 @@ class IndexView(BaseView):
     @utils.sensitive
     def handle_registration(self, request):
         form = forms.AccountCreationForm(request.POST)
+        success_msg = _('Registration successful!')
 
-        if form.is_valid():
-            form.save()
-            messages.success(request, _('Registration successful!'))
+        if forms.validate_form(request, form, success_msg):
             return redirect('/login')
         else:
-            utils.show_form_error_messages(request, form)
-            return redirect('/register')
+            return redirect('register')
 
 
 class SearchView(PagingView):
@@ -170,19 +168,16 @@ class UserView(PagingView):
     def manage_user(self, request):
         """Handles email and password changes."""
 
-        if request.POST['change'] == 'email':
-            form = forms.EmailChangeForm(request.user, request.POST)
-            msg = _('E-mail changed successfully.')
-        else:
-            form = forms.PasswordChangeForm(request.user, request.POST)
-            msg = _('Password changed successfully.')
+        password_change = request.POST['change'] == 'password'
 
-        if form.is_valid():
-            form.save()
-            update_session_auth_hash(request, request.user)  # in case of password change, so user is not logged out
-            messages.success(request, msg)
+        if password_change:
+            form = forms.PasswordChangeForm(request.user, request.POST)
+            success_msg = _('Password changed successfully.')
         else:
-            utils.show_form_error_messages(request, form)
+            form = forms.EmailChangeForm(request.user, request.POST)
+            success_msg = _('E-mail changed successfully.')
+
+        forms.validate_form(request, form, success_msg, password_change)
 
 
 class CheckoutView(PagingView):
@@ -354,7 +349,8 @@ class StudyView(BaseView):
     session_keys = ('uuid', )
 
     def get_context(self, request, **kwargs):
-        return self._create_context(start_with=self.start_with(request))
+        deck = Deck.objects.get(uuid=request.session['uuid'])
+        return self._create_context(start_with=self.start_with(request), deck=deck)
 
     def save_settings(self, request):
         request.session['start_with'] = request.POST['start-with']

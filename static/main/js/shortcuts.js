@@ -28,3 +28,10 @@ class Shortcuts {
 
 // Shortcut class instansnce to access shortcut functions
 const shortcuts = new Shortcuts()
+
+
+function urlCopy() {
+    const textToCopy = document.getElementById('copy')
+    textToCopy.select()
+    navigator.clipboard.writeText(textToCopy.value)
+}

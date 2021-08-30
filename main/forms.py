@@ -33,3 +33,20 @@ class EmailChangeForm(ModelForm):
         if commit:
             self.user.save()
         return self.user
+
+
+def validate_form(request, form, success_msg, update_session=False):
+    from django.contrib import messages
+    from django.contrib.auth import update_session_auth_hash
+
+    if form.is_valid():
+        form.save()
+        if update_session:
+            update_session_auth_hash(request, request.user)
+        messages.success(request, success_msg)
+        return True
+    else:
+        # show form error messages
+        for error in form.errors.values():
+            messages.error(request, error)
+        return False
