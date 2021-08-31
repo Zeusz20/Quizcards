@@ -21,12 +21,12 @@
     <form method="post">
         {% csrf_token %}
         <select name="start-with">
-            {% if start_with == "term" %}
-                <option value="term" selected>Term</option>
-                <option value="definition">Definition</option>
-            {% else %}
-                <option value="term">Term</option>
+            {% if start_with == "definition" %}
                 <option value="definition" selected>Definition</option>
+                <option value="term">Term</option>
+            {% else %}
+                <option value="definition">Definition</option>
+                <option value="term" selected>Term</option>
             {% endif %}
         </select>
         <button type="submit" class="btn btn-outline-success p-1">Save</button>

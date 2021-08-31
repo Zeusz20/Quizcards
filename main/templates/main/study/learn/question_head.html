@@ -1,7 +1,7 @@
 <div class="m-2">
-    <h5>{{ quiz.question.text }}</h5>
-    {% if quiz.question.image %}
+    <h5>{{ q.question.text }}</h5>
+    {% if q.question.image %}
         {% load static %}
-        <img src="{% static quiz.question.image.src %}" alt="{{ quiz.question.image.alt }}" class="zeusz-img">
+        <img src="{% static q.question.image.src %}" alt="{{ q.question.image.alt }}" class="zeusz-img">
     {% endif %}
 </div>

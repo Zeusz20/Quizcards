@@ -47,6 +47,7 @@ def validate_form(request, form, success_msg, update_session=False):
         return True
     else:
         # show form error messages
-        for error in form.errors.values():
-            messages.error(request, error)
+        for field in form.errors:
+            for error in form.errors[field]:
+                messages.error(request, error)
         return False

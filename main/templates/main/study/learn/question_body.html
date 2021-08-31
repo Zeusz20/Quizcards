@@ -1,5 +1,5 @@
 <div class="m-2">
-    {% for answer in quiz.answers %}
+    {% for answer in q.answers %}
     <div class="row mx-4 my-2">
         <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
             {{ answer.text }}

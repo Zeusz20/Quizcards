@@ -1,10 +1,10 @@
 {% extends "main/study/study.html" %}
 
 {% block lesson %}
-    {% for quiz in questions %}
+    {% for q in questions %}
         <div data-label="quiz" class="hidden">
             {% autoescape off %}
-                {% include "main/study/learn/question_head.html" %}
+                {% include "main/study/learn/question_head.html"%}
                 <hr>
                 {% include "main/study/learn/question_body.html" %}
             {% endautoescape %}

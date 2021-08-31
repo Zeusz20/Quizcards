@@ -79,7 +79,7 @@ class IndexView(BaseView):
         if forms.validate_form(request, form, success_msg):
             return redirect('/login')
         else:
-            return redirect('register')
+            return redirect('/register')
 
 
 class SearchView(PagingView):
@@ -345,34 +345,36 @@ class EditorView(BaseView):
 
 
 class StudyView(BaseView):
-    """Base class for those view classes which handle the studying aspect of quizcards."""
+    """Base class for those view classes which handle the studying aspect of Quizcards."""
+
     session_keys = ('uuid', )
-
-    def get_context(self, request, **kwargs):
-        deck = Deck.objects.get(uuid=request.session['uuid'])
-        return self._create_context(start_with=self.start_with(request), deck=deck)
-
-    def save_settings(self, request):
-        request.session['start_with'] = request.POST['start-with']
-
-    def start_with(self, request):
-        return request.session.get('start_with') or 'term'
-
-
-class FlashcardsView(StudyView):
-    template_name = 'main/study/flashcards/flashcards.html'
 
     def get(self, request):
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
-            return redirect('/flashcards')
+            return redirect(self.redirect_to())
 
         utils.session_clean_up(self, request)
         return super().render(request)
 
     def post(self, request):
-        super().save_settings(request)
+        request.session['start_with'] = request.POST['start-with']
         return super().render(request)
+
+    def get_context(self, request, **kwargs):
+        deck = Deck.objects.get(uuid=request.session['uuid'])
+        return self._create_context(start_with=self.start_with(request), deck=deck)
+
+    def start_with(self, request):
+        return request.session.get('start_with') or 'definition'
+
+    @abstractmethod
+    def redirect_to(self):
+        pass
+
+
+class FlashcardsView(StudyView):
+    template_name = 'main/study/flashcards/flashcards.html'
 
     def get_context(self, request, **kwargs):
         deck = Deck.objects.get(uuid=request.session['uuid'])
@@ -380,21 +382,12 @@ class FlashcardsView(StudyView):
         context.update(cards=Card.objects.filter(deck=deck))
         return context
 
+    def redirect_to(self):
+        return '/flashcards'
+
 
 class LearnView(StudyView):
     template_name = 'main/study/learn/learn.html'
-
-    def get(self, request):
-        if request.GET.get('uuid'):
-            request.session['uuid'] = request.GET['uuid']
-            return redirect('/learn')
-
-        utils.session_clean_up(self, request)
-        return super().render(request)
-
-    def post(self, request):
-        super().save_settings(request)
-        return super().render(request)
 
     def get_context(self, request, **kwargs):
         uuid = request.session['uuid']
@@ -403,15 +396,18 @@ class LearnView(StudyView):
         context.update(questions=testgen.generate_questions(uuid, start_with))
         return context
 
+    def redirect_to(self):
+        return '/learn'
+
 
 class CryptoView(View):
     """Grants access to RSA public key. Available through PUT request."""
+
+    def get(self, request):
+        from django.http import Http404
+        raise Http404
 
     def put(self, request):
         from django.http import HttpResponse
         from .crypto import crypto
         return HttpResponse(crypto.public_key())
-
-    def get(self, request):
-        from django.http import Http404
-        raise Http404
