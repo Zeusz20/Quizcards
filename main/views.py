@@ -368,9 +368,8 @@ class StudyView(BaseView):
     def start_with(self, request):
         return request.session.get('start_with') or 'definition'
 
-    @abstractmethod
     def redirect_to(self):
-        pass
+        return '/' + self.__class__.__name__[:-4].lower()
 
 
 class FlashcardsView(StudyView):
@@ -382,9 +381,6 @@ class FlashcardsView(StudyView):
         context.update(cards=Card.objects.filter(deck=deck))
         return context
 
-    def redirect_to(self):
-        return '/flashcards'
-
 
 class LearnView(StudyView):
     template_name = 'main/study/learn/learn.html'
@@ -395,9 +391,6 @@ class LearnView(StudyView):
         context = super().get_context(request, **kwargs)
         context.update(questions=testgen.generate_questions(uuid, start_with))
         return context
-
-    def redirect_to(self):
-        return '/learn'
 
 
 class CryptoView(View):

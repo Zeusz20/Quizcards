@@ -4,8 +4,8 @@
         <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
             {{ answer.text }}
             {% if answer.image %}
-                {% load static %}
-                <img src="{% static answer.image.src %}" alt="{{ answer.image.alt }}" class="zeusz-img">
+                {% load media %}
+                <img src="{% media answer.image %}" alt="{{ answer.image.alt }}" class="zeusz-img">
             {% endif %}
         </button>
     </div>

@@ -11,16 +11,9 @@ LONG_LENGTH = 512
 
 
 class ImageField(FileField):
-    """Used by Card models for easier access to html image src and alt attributes."""
+    """Used by Card models for easier access to html image alt attribute."""
 
     class FieldImage(FieldFile):
-        @property
-        def src(self):
-            if self.name != '':
-                root = basename(settings.MEDIA_ROOT)
-                return join(root, basename(self.name))
-            return ''
-
         @property
         def alt(self):
             return basename(self.name)

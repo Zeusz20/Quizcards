@@ -2,6 +2,11 @@ USER_VIEW_PAGE_SIZE = 7
 SEARCH_VIEW_PAGE_SIZE = 10
 
 
+def django_thread():
+    from threading import enumerate
+    return next(filter(lambda thread: thread.name == 'django-main-thread', enumerate()))
+
+
 def auth_required(get_request):
     """Redirect unauthenticated user to home page if trying to access pages with authentication requirement."""
 

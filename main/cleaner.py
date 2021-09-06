@@ -3,7 +3,7 @@ import threading
 
 from django.conf import settings
 from .models import Card
-from .utils import validate_datetime
+from .utils import django_thread, validate_datetime
 
 CLEANUP_THREAD_NAME = 'FileCleanupThread'
 
@@ -29,7 +29,7 @@ def start_cleanup_thread(day, hour, minute):
         from datetime import datetime
         from time import sleep
 
-        while True:
+        while django_thread().is_alive():
             now = datetime.now()
             current_day = (now.date().isoweekday() == day)
             current_time = (now.hour == hour and now.minute == minute)
@@ -38,11 +38,9 @@ def start_cleanup_thread(day, hour, minute):
                 file_cleanup()
             sleep(60)   # wake up every minute
 
-    threads = list(
-        # get the names of running threads
-        map(lambda thread: thread.name, threading.enumerate())
-    )
+    # get the names of running threads
+    threads = map(lambda thread: thread.name, threading.enumerate())
 
     if CLEANUP_THREAD_NAME not in threads:
-        cleanup_thread = threading.Thread(target=task, name=CLEANUP_THREAD_NAME)
+        cleanup_thread = threading.Thread(target=task, name=CLEANUP_THREAD_NAME, daemon=True)
         cleanup_thread.start()
