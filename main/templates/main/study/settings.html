@@ -1,0 +1,36 @@
+<form method="post">
+    {% csrf_token %}
+
+    <div class="input-group mb-2">
+        <div class="input-group-text">
+            {% if settings.show_images %}
+                <input id="show-images" type="checkbox" name="show-images" class="form-check-input" checked>
+            {% else %}
+                <input id="show-images" type="checkbox" name="show-images" class="form-check-input">
+            {% endif %}
+        </div>
+        <label for="show-images" class="form-check-label form-control">Show Images</label>
+    </div>
+
+    <!-- Study session settings -->
+    <div class="input-group mb-2">
+        {% if request.path == "/flashcards/" %}
+            <span class="input-group-text">Start with:</span>
+            <select name="start-with" class="form-select">
+        {% else %}
+            <span class="input-group-text">Answer with:</span>
+            <select name="answer-with" class="form-select">
+        {% endif %}
+            {# continue select body #}
+                {% if settings.start_with == "definition" or settings.answer_with == "definition" %}
+                    <option value="definition" selected>Definition</option>
+                    <option value="term">Term</option>
+                {% else %}
+                    <option value="definition">Definition</option>
+                    <option value="term" selected>Term</option>
+                {% endif %}
+            </select>
+    </div>
+
+    <button type="submit" class="btn btn-success m-2">Save</button>
+</form>

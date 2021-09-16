@@ -3,7 +3,7 @@
     <div class="row mx-4 my-2">
         <button name="answer" value="{{ answer.correct }}" class="btn btn-outline-secondary">
             {{ answer.text }}
-            {% if answer.image %}
+            {% if settings.show_images and answer.image %}
                 {% load media %}
                 <img src="{% media answer.image %}" alt="{{ answer.image.alt }}" class="zeusz-img">
             {% endif %}

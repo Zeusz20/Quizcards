@@ -1,4 +1,4 @@
-var activeId = -1
+var activeId = 0
 
 init()
 
@@ -21,26 +21,22 @@ function init() {
 
 /** Displays the next question in the quiz. */
 function showNextQuestion() {
-    activeId++
-    const quizes = Array.from(shortcuts.getElementsByLabel('quiz'))
+    const wrapper = document.getElementById('wrapper')
+    const questions = shortcuts.getElementsByLabel('question')
+
+    wrapper.innerHTML = questions[activeId].innerHTML
+    bind(questions[activeId])
     
-    for(let i = 0; i < quizes.length; i++) {
-        if(i == activeId) {
-            shortcuts.showElement(quizes[i])
-            bind(quizes[i])
-        }
-        else {
-            shortcuts.hideElement(quizes[i])
-        }
-    }
+    activeId++
 }
 
 /** Displays "next button" of "retry button" depending on quiz progression. */
 function showNav() {
     const nextButton = document.getElementById('next-btn')
     const retryButton = document.getElementById('retry-btn')
+    const questions = shortcuts.getElementsByLabel('question')
     
-    if(activeId + 1 < shortcuts.getElementsByLabel('quiz').length) {
+    if(activeId + 1 < questions.length) {
         shortcuts.showElement(nextButton)
     }
     else {

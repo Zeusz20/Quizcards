@@ -1,8 +1,12 @@
 {% extends "main/study/study.html" %}
 
 {% block lesson %}
+    <div id="wrapper">
+        {# Quiz innerHTML goes here from "question" labelled divs. #}
+    </div>
+
     {% for q in questions %}
-        <div data-label="quiz" class="hidden">
+        <div data-label="question" class="hidden">
             {% autoescape off %}
                 {% include "main/study/learn/question_head.html"%}
                 <hr>

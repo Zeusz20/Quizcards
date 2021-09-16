@@ -16,6 +16,8 @@ class BaseView(View, metaclass=ABCMeta):
     session_keys = tuple()
 
     def render(self, request, **kwargs):
+        utils.session_clean_up(self, request)
+        print(dict(request.session))
         context = self.get_context(request, **kwargs)
         return django_render(request, self.template_name, context)
 
@@ -87,7 +89,6 @@ class SearchView(PagingView):
     session_keys = ('global_search', )
 
     def get(self, request, **kwargs):
-        utils.session_clean_up(self, request)
         return super().render(request, **kwargs)
 
     def post(self, request, **kwargs):
@@ -110,8 +111,6 @@ class UserView(PagingView):
 
     @utils.auth_required
     def get(self, request, **kwargs):
-        utils.session_clean_up(self, request)
-
         # fresh login tasks
         if self.site is None and kwargs.get('page') is None:
             request.user.save()  # update last login date
@@ -189,7 +188,6 @@ class CheckoutView(PagingView):
             request.session['checkout'] = request.GET['checkout']
             return redirect('/checkout/1')
 
-        utils.session_clean_up(self, request)
         return super().render(request, **kwargs)
 
     def get_context(self, request, **kwargs):
@@ -212,7 +210,6 @@ class EditorView(BaseView):
             request.session['uuid'] = request.GET['uuid']
             return redirect('/editor')
 
-        utils.session_clean_up(self, request)
         return super().render(request)
 
     def post(self, request):
@@ -347,26 +344,26 @@ class EditorView(BaseView):
 class StudyView(BaseView):
     """Base class for those view classes which handle the studying aspect of Quizcards."""
 
-    session_keys = ('uuid', )
+    session_keys = ('settings', 'uuid', )
 
     def get(self, request):
         if request.GET.get('uuid'):
             request.session['uuid'] = request.GET['uuid']
             return redirect(self.redirect_to())
 
-        utils.session_clean_up(self, request)
+        if request.session.get('settings') is None:
+            request.session['settings'] = testgen.get_settings()
+
         return super().render(request)
 
     def post(self, request):
-        request.session['start_with'] = request.POST['start-with']
-        return super().render(request)
+        request.session['settings'] = testgen.get_settings(request.POST)
+        return redirect(self.redirect_to())  # POST/REDIRECT/GET in order to prevent resubmitting settings
 
     def get_context(self, request, **kwargs):
+        settings = request.session['settings']
         deck = Deck.objects.get(uuid=request.session['uuid'])
-        return self._create_context(start_with=self.start_with(request), deck=deck)
-
-    def start_with(self, request):
-        return request.session.get('start_with') or 'definition'
+        return self._create_context(settings=settings, deck=deck)
 
     def redirect_to(self):
         return '/' + self.__class__.__name__[:-4].lower()
@@ -387,9 +384,9 @@ class LearnView(StudyView):
 
     def get_context(self, request, **kwargs):
         uuid = request.session['uuid']
-        start_with = self.start_with(request)
+        answer_with = request.session['settings']['answer_with']
         context = super().get_context(request, **kwargs)
-        context.update(questions=testgen.generate_questions(uuid, start_with))
+        context.update(questions=testgen.generate_questions(uuid, answer_with))
         return context
 
 
