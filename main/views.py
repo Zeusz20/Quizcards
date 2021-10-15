@@ -17,7 +17,6 @@ class BaseView(View, metaclass=ABCMeta):
 
     def render(self, request, **kwargs):
         utils.session_clean_up(self, request)
-        print(dict(request.session))
         context = self.get_context(request, **kwargs)
         return django_render(request, self.template_name, context)
 
