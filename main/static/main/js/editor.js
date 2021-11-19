@@ -32,8 +32,8 @@ function getTinyMCEConfig(type) {
     return {
         selector: `div[data-label="${type}"]`,
         menubar: false,
-        plugins: 'textcolor',
-        toolbar: 'undo redo | bold italic underline | forecolor backcolor',
+        plugins: ['textcolor', 'lists'],
+        toolbar: 'undo redo | bold italic underline strikethrough | forecolor backcolor | alignright aligncenter alignleft alignjustify | numlist bullist | subscript superscript',
         statusbar: false,
     }
 }
