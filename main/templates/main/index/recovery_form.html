@@ -1,0 +1,10 @@
+<form method="post">
+    {% csrf_token %}
+    <div class="input-group mb-3">
+        <input type="text" name="username" placeholder="Username" class="form-control" required>
+    </div>
+    <div class="input-group mb-3">
+        <input type="email" name="email" placeholder="E-mail" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary my-2">Recover Password</button>
+</form>

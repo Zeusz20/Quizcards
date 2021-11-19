@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db.transaction import atomic
 from django.shortcuts import redirect, render as django_render
@@ -56,6 +57,8 @@ class IndexView(BaseView):
             return self.handle_login(request)
         elif self.site == 'register':
             return self.handle_registration(request)
+        elif self.site == 'recovery':
+            return self.recover_password(request)
 
     def get_context(self, request, **kwargs):
         return self._create_context(site=self.site)
@@ -81,6 +84,33 @@ class IndexView(BaseView):
             return redirect('/login')
         else:
             return redirect('/register')
+
+    def recover_password(self, request):
+        username = request.POST['username']
+        email = request.POST['email']
+
+        try:
+            # refresh user's password
+            user = User.objects.select_for_update().get(username=username, email=email)
+            new_password = utils.random_string(32)
+            user.set_password(new_password)
+            user.save()
+
+            # inform user about the changes
+            send_mail(
+                'Password Recovery',
+                _('Dear %s!\nWe\'ve refreshed your password.\nYou can login with: %s\n\nSincerely\nQuizcards Support')
+                % (user.username, new_password),   # format string
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user.email],
+            )
+            msg = _('We\'ve sent an email containing your new password.')
+            messages.success(request, msg)
+            return redirect('/login')
+        except User.DoesNotExist:
+            msg = _(f'No match for "{username}" and "{email}".')
+            messages.error(request, msg)
+            return redirect('/recovery')
 
 
 class SearchView(PagingView):

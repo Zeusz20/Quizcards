@@ -5,6 +5,7 @@ urlpatterns = [
     path('', IndexView.as_view()),
     path('login/', IndexView.as_view(site='login')),
     path('register/', IndexView.as_view(site='register')),
+    path('recovery/', IndexView.as_view(site='recovery')),
 
     path('search/<page>', SearchView.as_view(), name='page'),
 

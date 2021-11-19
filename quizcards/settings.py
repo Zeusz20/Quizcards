@@ -14,6 +14,7 @@ from django.contrib.messages import constants as messages
 from decouple import config
 from os import path
 from pathlib import Path
+from socket import gethostbyname as ipv4
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -117,6 +118,17 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+
+# Email settings
+# https://docs.djangoproject.com/en/3.2/topics/email/
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = config('EMAIL_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')
 
 
 # Static files (CSS, JavaScript, Images)

@@ -6,6 +6,10 @@
             <h5>Register</h5>
             {% include "main/messages.html" %}
             {% include "main/index/register_form.html" %}
+        {% elif site == "recovery" %}
+            <h5>Password Recovery</h5>
+            {% include "main/messages.html" %}
+            {% include "main/index/recovery_form.html" %}
         {% else %}
             <h5>Log In</h5>
             {% include "main/messages.html" %}
