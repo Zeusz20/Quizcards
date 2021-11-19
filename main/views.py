@@ -108,7 +108,7 @@ class IndexView(BaseView):
             messages.success(request, msg)
             return redirect('/login')
         except User.DoesNotExist:
-            msg = _(f'No match for "{username}" and "{email}".')
+            msg = _('No match for "%s" and "%s".') % (username, email)
             messages.error(request, msg)
             return redirect('/recovery')
 
