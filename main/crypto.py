@@ -22,12 +22,11 @@ class Crypto:
         self.keypair = RSA.import_key(open(Crypto.RSA_KEY).read(), passphrase=passphrase)
 
     def decrypt(self, encrypted_text):
-        encrypted_text = b64decode(encrypted_text)
         cipher = PKCS1_v1_5.new(self.keypair)
         size = self.keypair.size_in_bits() // 8
         sentinel = Random.new().read(size)
-        plaintext = cipher.decrypt(encrypted_text, sentinel)
-        return plaintext.decode()
+        plaintext = cipher.decrypt(b64decode(encrypted_text), sentinel).decode()
+        return plaintext
 
     def public_key(self):
         return self.keypair.public_key().export_key().decode()
